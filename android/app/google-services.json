@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "156826465887",
+    "firebase_url": "https://evaluapp-a4055-default-rtdb.firebaseio.com",
+    "project_id": "evaluapp-a4055",
+    "storage_bucket": "evaluapp-a4055.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:156826465887:android:d7f7151ea1fba3aad04dea",
+        "android_client_info": {
+          "package_name": "com.michaelmadrid.evalua"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKs8gZBc_eKlg46uPq92fdiD_eTZE2yC8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

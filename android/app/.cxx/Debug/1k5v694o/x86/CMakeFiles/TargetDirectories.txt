@@ -1,0 +1,2 @@
+C:/evaluapp/android/app/.cxx/Debug/1k5v694o/x86/CMakeFiles/edit_cache.dir
+C:/evaluapp/android/app/.cxx/Debug/1k5v694o/x86/CMakeFiles/rebuild_cache.dir

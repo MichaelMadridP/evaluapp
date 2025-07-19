@@ -1,0 +1,2 @@
+C:/evaluapp/android/app/.cxx/RelWithDebInfo/1p71r423/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/evaluapp/android/app/.cxx/RelWithDebInfo/1p71r423/arm64-v8a/CMakeFiles/rebuild_cache.dir
