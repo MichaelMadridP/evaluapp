@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:evaluapp/data_model/model.dart';
 
 class EditDimension extends StatefulWidget {
@@ -16,8 +17,8 @@ class EditDimension extends StatefulWidget {
 
 class _EditDimensionState extends State<EditDimension> {
   final _controllerDim = TextEditingController();
+  final _controllerPercentage = TextEditingController();
   double _noteCountSliderValue = 1;
-  double _notePercentageSliderValue = 50;
   bool? _isRemoveChecked = false;
 
   @override
@@ -25,14 +26,15 @@ class _EditDimensionState extends State<EditDimension> {
     super.initState();
     // Cargar los valores originales
     _controllerDim.text = widget.dimension.dimensionTitle;
+    _controllerPercentage.text = widget.dimension.percentageWeight.toString();
     _noteCountSliderValue = widget.dimension.numNotes.toDouble();
-    _notePercentageSliderValue = widget.dimension.percentageWeight.toDouble();
     _isRemoveChecked = widget.dimension.removeWorstNote;
   }
 
   @override
   void dispose() {
     _controllerDim.dispose();
+    _controllerPercentage.dispose();
     super.dispose();
   }
 
@@ -127,26 +129,59 @@ class _EditDimensionState extends State<EditDimension> {
                   'Ponderación',
                   style: TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
                 ),
-                Slider(
-                  value: _notePercentageSliderValue,
-                  max: 100,
-                  min:
-                      1, // min 1 divisions 99, min 5 division 19, min 10 divisions 20
-                  divisions: 99,
-                  label: _notePercentageSliderValue.round().toString(),
-                  onChanged: (double value) {
-                    setState(() {
-                      // Actualizar el Padre con los cambios
-                      _notePercentageSliderValue = value;
-                      widget.dimension.percentageWeight = value.round();
-                      widget.onChanged();
-                    });
-                  },
-                ),
-                Text(
-                  '${_notePercentageSliderValue.round().toString()}%',
-                  style:
-                      const TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: _controllerPercentage,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    style:
+                        const TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                    decoration: const InputDecoration(
+                      suffixText: '%',
+                      suffixStyle:
+                          TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      // Validar que esté entre 0 y 100
+                      if (value.isEmpty) {
+                        widget.dimension.percentageWeight = 0;
+                        widget.onChanged();
+                        return;
+                      }
+
+                      int? newValue = int.tryParse(value);
+                      if (newValue != null) {
+                        if (newValue > 100) {
+                          // Si excede 100, establecer en 100
+                          _controllerPercentage.text = '100';
+                          _controllerPercentage.selection =
+                              TextSelection.fromPosition(
+                            TextPosition(
+                                offset: _controllerPercentage.text.length),
+                          );
+                          widget.dimension.percentageWeight = 100;
+                        } else if (newValue < 0) {
+                          // Si es menor que 0, establecer en 0
+                          _controllerPercentage.text = '0';
+                          _controllerPercentage.selection =
+                              TextSelection.fromPosition(
+                            TextPosition(
+                                offset: _controllerPercentage.text.length),
+                          );
+                          widget.dimension.percentageWeight = 0;
+                        } else {
+                          // Valor válido
+                          widget.dimension.percentageWeight = newValue;
+                        }
+                        widget.onChanged();
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
@@ -159,6 +194,8 @@ class _EditDimensionState extends State<EditDimension> {
                         // Actualizar el Padre con los cambios
                         _isRemoveChecked = value;
                         widget.dimension.removeWorstNote = value ?? false;
+                        // Recalcular promedios con el nuevo estado
+                        widget.dimension.calculate();
                         widget.onChanged();
                       });
                     }),

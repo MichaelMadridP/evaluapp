@@ -84,6 +84,9 @@ class _DimensionState extends State<Dimension> {
 
   @override
   Widget build(BuildContext context) {
+    // Actualizar el indicador * basado en el estado actual
+    noHelperForRemoveWorstNote = widget.dimension.removeWorstNote ? '(*)' : '';
+
     final bool isFinal = widget.dimension.isFinal();
     final averageLabel = isFinal ? 'Promedio Final' : 'Promedio Parcial';
     return Card(
@@ -108,8 +111,8 @@ class _DimensionState extends State<Dimension> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(averageLabel,
-                      style:
-                          const TextStyle(color: Color.fromARGB(255, 221, 201, 248))),
+                      style: const TextStyle(
+                          color: Color.fromARGB(255, 221, 201, 248))),
                   const SizedBox(width: 8),
                   NoteDisplayOnly(value: widget.dimension.average),
                   const SizedBox(width: 8),
