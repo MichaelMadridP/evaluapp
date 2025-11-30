@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para usar FilteringTextInputFormatter
+import 'package:evaluapp/themes.dart';
 
 class Note extends StatefulWidget {
   const Note(
@@ -94,6 +95,8 @@ class _NoteState extends State<Note> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     return widget.isActive
         ? // Si el widget esta activo
 
@@ -118,12 +121,11 @@ class _NoteState extends State<Note> {
                 keyboardType: TextInputType.number,
                 style: TextStyle(color: _textColor),
                 decoration: InputDecoration(
-                  enabledBorder: const OutlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color.fromARGB(255, 93, 69, 126))),
+                  enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: colors.noteFieldBorder)),
                   labelText: widget.label,
-                  labelStyle: const TextStyle(
-                      color: Color.fromARGB(255, 190, 190, 190)),
+                  labelStyle: TextStyle(
+                      color: colors.dimensionCardText.withOpacity(0.7)),
                   counterText: '',
                 ),
               ),
@@ -134,7 +136,7 @@ class _NoteState extends State<Note> {
             decoration: BoxDecoration(
               border: Border.all(
                   width: 1,
-                  color: const Color.fromARGB(255, 93, 69, 126),
+                  color: colors.noteFieldBorder,
                   style: BorderStyle.solid),
               borderRadius: BorderRadius.circular(6),
             ),

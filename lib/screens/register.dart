@@ -1,9 +1,8 @@
-
 import 'package:evaluapp/data_model/data_connect.dart';
 import 'package:evaluapp/screens/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:evaluapp/themes.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -56,16 +55,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Intentar la conexión
     try {
       final FirebaseAuth auth = FirebaseAuth.instance;
-      final UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-          email: _emailController.text, password: _passwordController.text);
-      
+      final UserCredential userCredential =
+          await auth.createUserWithEmailAndPassword(
+              email: _emailController.text, password: _passwordController.text);
+
       if (userCredential.user?.uid != null) {
         // Conexión exitosa
         // Actualizar el nombbre del usuario en el registro de autenticación del usuario en Firebase Auth
         await userCredential.user?.updateDisplayName(_usernameController.text);
 
         // Crear el usuario en la base de datos
-        createNewUserOnDatabase(userCredential.user!.uid, _usernameController.text, _emailController.text);
+        createNewUserOnDatabase(userCredential.user!.uid,
+            _usernameController.text, _emailController.text);
 
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -110,9 +111,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 183, 131, 252),
+        backgroundColor: colors.appBarBackground,
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -130,34 +133,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: const Text('Registro'),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
             gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-              Color.fromARGB(255, 67, 2, 153),
-              Color.fromARGB(255, 14, 0, 32)
-            ])),
+                colors: [colors.authBackground, colors.backgroundGradientEnd])),
         child: Center(
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 const SizedBox(height: 40),
-                const Text('EvaluApp',
+                Text('EvaluApp',
                     style: TextStyle(
-                      color: Color.fromARGB(255, 239, 227, 252),
+                      color: colors.authTitle,
                       fontSize: 30,
                     )),
                 const SizedBox(height: 20),
-                const Text('Tu evaluador predictivo de notas',
+                Text('Tu evaluador predictivo de notas',
                     style: TextStyle(
-                      color: Color.fromARGB(255, 226, 205, 250),
+                      color: colors.authSubtitle,
                       fontSize: 18,
                     )),
                 const SizedBox(height: 14),
                 Card(
-                  color: const Color.fromARGB(255, 61, 8, 131),
+                  color: colors.authCardBackground,
                   margin: const EdgeInsets.only(top: 20),
                   child: SingleChildScrollView(
                     child: Padding(
@@ -165,24 +165,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Crea una cuenta',
+                          Text('Crea una cuenta',
                               style: TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250),
+                                color: colors.authSubtitle,
                                 fontSize: 18,
                               )),
                           const SizedBox(height: 14),
                           TextFormField(
                             controller: _usernameController,
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250)),
-                            decoration: const InputDecoration(
-                                labelStyle: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250)),
+                            style: TextStyle(color: colors.authText),
+                            decoration: InputDecoration(
+                                labelStyle:
+                                    TextStyle(color: colors.authInputLabel),
                                 labelText: 'Nombre',
                                 hintText: 'Nombre',
-                                icon: Icon(Icons.person),
-                                iconColor: Color.fromARGB(255, 226, 205, 250),
-                                border: OutlineInputBorder()),
+                                icon: const Icon(Icons.person),
+                                iconColor: colors.authInputIcon,
+                                border: const OutlineInputBorder()),
                             keyboardType: TextInputType.name,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
@@ -196,16 +195,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 14),
                           TextFormField(
                             controller: _emailController,
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250)),
-                            decoration: const InputDecoration(
-                                labelStyle: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250)),
+                            style: TextStyle(color: colors.authText),
+                            decoration: InputDecoration(
+                                labelStyle:
+                                    TextStyle(color: colors.authInputLabel),
                                 labelText: 'Email',
                                 hintText: 'Email',
-                                icon: Icon(Icons.email),
-                                iconColor: Color.fromARGB(255, 226, 205, 250),
-                                border: OutlineInputBorder()),
+                                icon: const Icon(Icons.email),
+                                iconColor: colors.authInputIcon,
+                                border: const OutlineInputBorder()),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
@@ -219,16 +217,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 20),
                           TextFormField(
                             controller: _passwordController,
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250)),
-                            decoration: const InputDecoration(
-                                labelStyle: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250)),
+                            style: TextStyle(color: colors.authText),
+                            decoration: InputDecoration(
+                                labelStyle:
+                                    TextStyle(color: colors.authInputLabel),
                                 labelText: 'Contraseña',
                                 hintText: 'Contraseña',
-                                icon: Icon(Icons.password),
-                                iconColor: Color.fromARGB(255, 226, 205, 250),
-                                border: OutlineInputBorder()),
+                                icon: const Icon(Icons.password),
+                                iconColor: colors.authInputIcon,
+                                border: const OutlineInputBorder()),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             obscureText: true,
@@ -245,13 +242,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _doRegister(context);
                             },
                             style: TextButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 107, 68, 168),
+                                backgroundColor: colors.authButtonBackground,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(100))),
-                            child: const Text('   Crear Cuenta   ',
+                            child: Text('   Crear Cuenta   ',
                                 style: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250),
+                                    color: colors.authButtonText,
                                     fontSize: 14)),
                           ),
                         ],
@@ -263,9 +259,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 12),
                 const SizedBox(height: 20),
                 const SizedBox(height: 50),
-                const Text('2024 © EvaluApp by Mikemad',
+                Text('2024 © EvaluApp by Mikemad',
                     style: TextStyle(
-                      color: Color.fromRGBO(179, 163, 197, 1),
+                      color: colors.authFooterText,
                       fontSize: 10,
                     )),
               ],

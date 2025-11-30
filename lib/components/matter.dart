@@ -4,15 +4,17 @@ import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/components/dimension.dart';
 import 'package:evaluapp/components/edit_matter.dart';
 import 'package:evaluapp/components/note_display_only.dart';
+import 'package:evaluapp/themes.dart';
 
 //*****************************************************************************************************/
 // Tarjeta completa de una materia. Contiene múltiples dimensiones
 //*****************************************************************************************************/
 class Matter extends StatefulWidget {
-  const Matter({super.key, 
-  required this.matter,
-  required this.idxMatter,
-  required this.onRemoveMatterCB,
+  const Matter({
+    super.key,
+    required this.matter,
+    required this.idxMatter,
+    required this.onRemoveMatterCB,
   });
 
   final MatterData matter;
@@ -61,21 +63,21 @@ class _MatterState extends State<Matter> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
     widget.matter.calculate(); // Actualizar la materia
     final bool isFinal = widget.matter.isFinal();
     final averageLabel = isFinal ? 'Final' : 'Parcial';
 
     return Card(
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
             side: BorderSide(
-              color: Color.fromARGB(255, 90, 75, 112),
+              color: colors.matterCardBorder,
             ),
-            borderRadius: BorderRadius.all(Radius.circular(10))),
+            borderRadius: const BorderRadius.all(Radius.circular(10))),
         elevation: 40,
         borderOnForeground: true,
         margin: const EdgeInsets.all(10), // Bordes externos
-        color: const Color.fromARGB(255, 39, 1, 83),
-        //color: Color.fromARGB(255, 48, 1, 51),
+        color: colors.matterCardBackground,
         child: SizedBox(
           width: double.infinity, // Usar todo el ancho
           child: Column(
@@ -89,10 +91,10 @@ class _MatterState extends State<Matter> {
                   },
                   child: Text(widget.matter.matterTitle,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 221, 201, 248),
+                        color: colors.matterCardTitle,
                       ))),
               const SizedBox(
                 height: 10,
@@ -106,21 +108,21 @@ class _MatterState extends State<Matter> {
                       const SizedBox(width: 10),
                       Text(
                         averageLabel,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color.fromARGB(255, 179, 157, 209),
+                          color: colors.matterCardText,
                         ),
                       ),
                       const SizedBox(width: 10),
                       NoteDisplayOnly(value: widget.matter.average),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         'Requerido',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color.fromARGB(255, 179, 157, 209),
+                          color: colors.matterCardText,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -135,8 +137,8 @@ class _MatterState extends State<Matter> {
               const SizedBox(
                 height: 1,
               ),
-              const Divider(
-                color: Color.fromARGB(255, 90, 75, 112),
+              Divider(
+                color: colors.matterCardBorder,
               ),
               const SizedBox(
                 height: 1,

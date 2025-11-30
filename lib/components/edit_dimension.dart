@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:evaluapp/data_model/model.dart';
+import 'package:evaluapp/themes.dart';
 
 class EditDimension extends StatefulWidget {
   const EditDimension(
@@ -40,11 +41,13 @@ class _EditDimensionState extends State<EditDimension> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     return Card(
       margin: const EdgeInsets.symmetric(
           vertical: 5, horizontal: 15), // margen exterior
       elevation: 20,
-      color: const Color.fromARGB(255, 162, 123, 255),
+      color: colors.editDimensionBackground,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -58,16 +61,15 @@ class _EditDimensionState extends State<EditDimension> {
                       // Actualizar el Padre con los cambios
                       widget.dimension.dimensionTitle = _controllerDim.text;
                     },
-                    style:
-                        const TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                    style: TextStyle(color: colors.editDimensionText),
                     controller: _controllerDim,
                     keyboardType: TextInputType.name,
                     textCapitalization: TextCapitalization.words,
                     maxLength: 50,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Nombre Dimensión',
                       labelStyle: TextStyle(
-                        color: Color.fromARGB(255, 22, 20, 26),
+                        color: colors.editDimensionText,
                       ),
                     ),
                   ),
@@ -76,9 +78,9 @@ class _EditDimensionState extends State<EditDimension> {
             ),
             Row(
               children: [
-                const Text(
+                Text(
                   'Cant. de Notas',
-                  style: TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                  style: TextStyle(color: colors.editDimensionText),
                 ),
                 Slider(
                   value: _noteCountSliderValue,
@@ -118,16 +120,15 @@ class _EditDimensionState extends State<EditDimension> {
                 ),
                 Text(
                   _noteCountSliderValue.round().toString(),
-                  style:
-                      const TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                  style: TextStyle(color: colors.editDimensionText),
                 ),
               ],
             ),
             Row(
               children: [
-                const Text(
+                Text(
                   'Ponderación',
-                  style: TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                  style: TextStyle(color: colors.editDimensionText),
                 ),
                 const SizedBox(width: 10),
                 SizedBox(
@@ -138,13 +139,11 @@ class _EditDimensionState extends State<EditDimension> {
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                     ],
-                    style:
-                        const TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: colors.editDimensionText),
+                    decoration: InputDecoration(
                       suffixText: '%',
-                      suffixStyle:
-                          TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
-                      border: OutlineInputBorder(),
+                      suffixStyle: TextStyle(color: colors.editDimensionText),
+                      border: const OutlineInputBorder(),
                     ),
                     onChanged: (value) {
                       // Validar que esté entre 0 y 100
@@ -199,9 +198,9 @@ class _EditDimensionState extends State<EditDimension> {
                         widget.onChanged();
                       });
                     }),
-                const Text(
+                Text(
                   'Elimina la peor Nota',
-                  style: TextStyle(color: Color.fromARGB(255, 22, 20, 26)),
+                  style: TextStyle(color: colors.editDimensionText),
                 ),
               ],
             ),

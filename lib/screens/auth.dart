@@ -5,6 +5,7 @@ import 'package:evaluapp/screens/forgotten_pass.dart';
 import 'package:evaluapp/screens/register.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:evaluapp/themes.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -36,15 +37,17 @@ class _AuthScreenState extends State<AuthScreen> {
     // Intentar la conexión
     try {
       final FirebaseAuth auth = FirebaseAuth.instance;
-      final UserCredential userCredential = await auth.signInWithEmailAndPassword(
-          email: _emailController.text, password: _passwordController.text);
+      final UserCredential userCredential =
+          await auth.signInWithEmailAndPassword(
+              email: _emailController.text, password: _passwordController.text);
 
       if (userCredential.user?.uid != null) {
         // Conexión exitosa
 
         // Guardar el nombre de usuario en la BD y el userID en el archivo local de preferencias
-        saveStringPreference('username', userCredential.user!.displayName ?? '');
-        saveStringPreference('userid',   userCredential.user!.uid);
+        saveStringPreference(
+            'username', userCredential.user!.displayName ?? '');
+        saveStringPreference('userid', userCredential.user!.uid);
 
         //Recuperar los datos de la base de datos
         await getData(userCredential.user!.uid, 0);
@@ -76,36 +79,35 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
             gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-              Color.fromARGB(255, 67, 2, 153),
-              Color.fromARGB(255, 14, 0, 32)
-            ])),
+                colors: [colors.authBackground, colors.backgroundGradientEnd])),
         child: Center(
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 const SizedBox(height: 40),
-                const Text('EvaluApp',
+                Text('EvaluApp',
                     style: TextStyle(
-                      color: Color.fromARGB(255, 239, 227, 252),
+                      color: colors.authTitle,
                       fontSize: 30,
                     )),
                 const SizedBox(height: 20),
-                const Text('Tu evaluador predictivo de notas',
+                Text('Tu evaluador predictivo de notas',
                     style: TextStyle(
-                      color: Color.fromARGB(255, 226, 205, 250),
+                      color: colors.authSubtitle,
                       fontSize: 18,
                     )),
                 const SizedBox(height: 14),
                 Card(
-                  color: const Color.fromARGB(255, 61, 8, 131),
+                  color: colors.authCardBackground,
                   margin: const EdgeInsets.only(top: 20),
                   child: SingleChildScrollView(
                     child: Padding(
@@ -113,24 +115,23 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Ingresa a tu cuenta',
+                          Text('Ingresa a tu cuenta',
                               style: TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250),
+                                color: colors.authSubtitle,
                                 fontSize: 18,
                               )),
                           const SizedBox(height: 14),
                           TextFormField(
                             controller: _emailController,
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250)),
-                            decoration: const InputDecoration(
-                                labelStyle: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250)),
+                            style: TextStyle(color: colors.authText),
+                            decoration: InputDecoration(
+                                labelStyle:
+                                    TextStyle(color: colors.authInputLabel),
                                 labelText: 'Email',
                                 hintText: 'Email',
                                 icon: Icon(Icons.email),
-                                iconColor: Color.fromARGB(255, 226, 205, 250),
-                                border: OutlineInputBorder()),
+                                iconColor: colors.authInputIcon,
+                                border: const OutlineInputBorder()),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
@@ -144,16 +145,15 @@ class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 20),
                           TextFormField(
                             controller: _passwordController,
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250)),
-                            decoration: const InputDecoration(
-                                labelStyle: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250)),
+                            style: TextStyle(color: colors.authText),
+                            decoration: InputDecoration(
+                                labelStyle:
+                                    TextStyle(color: colors.authInputLabel),
                                 labelText: 'Contraseña',
                                 hintText: 'Contraseña',
                                 icon: Icon(Icons.password),
-                                iconColor: Color.fromARGB(255, 226, 205, 250),
-                                border: OutlineInputBorder()),
+                                iconColor: colors.authInputIcon,
+                                border: const OutlineInputBorder()),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             obscureText: true,
@@ -169,12 +169,12 @@ class _AuthScreenState extends State<AuthScreen> {
                               Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => const ForgottenPassScreen()));    
+                                      builder: (context) =>
+                                          const ForgottenPassScreen()));
                             },
-                            child: const Text('¿Olvidaste tu contraseña?',
+                            child: Text('¿Olvidaste tu contraseña?',
                                 style: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250),
-                                    fontSize: 14)),
+                                    color: colors.authSubtitle, fontSize: 14)),
                           ),
                           const SizedBox(height: 12),
                           TextButton(
@@ -182,13 +182,12 @@ class _AuthScreenState extends State<AuthScreen> {
                               _doLogin(context);
                             },
                             style: TextButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 107, 68, 168),
+                                backgroundColor: colors.authButtonBackground,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(100))),
-                            child: const Text('   Iniciar Sesión   ',
+                            child: Text('   Iniciar Sesión   ',
                                 style: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250),
+                                    color: colors.authButtonText,
                                     fontSize: 14)),
                           ),
                         ],
@@ -205,17 +204,17 @@ class _AuthScreenState extends State<AuthScreen> {
                           MaterialPageRoute(
                               builder: (context) => const RegisterScreen()));
                     },
-                    child: const Text('¿No tienes cuenta?',
+                    child: Text('¿No tienes cuenta?',
                         style: TextStyle(
-                          color: Color.fromARGB(255, 226, 205, 250),
+                          color: colors.authSubtitle,
                           fontSize: 14,
                         ))),
                 const SizedBox(height: 12),
                 const SizedBox(height: 20),
                 const SizedBox(height: 50),
-                const Text('2025 © EvaluApp by Mikemad',
+                Text('2025 © EvaluApp by Mikemad',
                     style: TextStyle(
-                      color: Color.fromRGBO(179, 163, 197, 1),
+                      color: colors.authFooterText,
                       fontSize: 10,
                     )),
               ],

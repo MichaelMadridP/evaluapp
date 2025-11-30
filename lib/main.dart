@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:evaluapp/data_model/data_connect.dart';
 import 'package:evaluapp/data_model/preferences.dart';
 import 'package:evaluapp/data_model/model.dart';
+import 'package:evaluapp/themes.dart';
 
 import 'package:evaluapp/components/edit_matter.dart';
 import 'package:evaluapp/components/display_program_data.dart';
@@ -10,7 +11,6 @@ import 'package:evaluapp/screens/auth.dart';
 // Google Firebase Authentication
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
 
 //***************************************************************************************/
 void main() async {
@@ -20,8 +20,35 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isDarkMode = true; // Por defecto modo oscuro
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    final isDark = getBoolPreference('isDarkMode') ?? true;
+    setState(() {
+      _isDarkMode = isDark;
+    });
+  }
+
+  void _toggleTheme(bool isDark) {
+    setState(() {
+      _isDarkMode = isDark;
+    });
+    saveBoolPreference('isDarkMode', isDark);
+  }
 
   Future<String?> _getUserId() async {
     // Espera a que las preferencias estén listas y devuelve el userid
@@ -30,27 +57,32 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'EvaluApp',
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-      ),
-      home: FutureBuilder<String?>(
-        future: _getUserId(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          final userId = snapshot.data;
-          if (userId == null) {
-            return const AuthScreen();
-          } else {
-            return const HomeScreen();
-          }
-        },
+    return ThemeProvider(
+      colors: _isDarkMode ? darkColors : lightColors,
+      isDarkMode: _isDarkMode,
+      toggleTheme: _toggleTheme,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'EvaluApp',
+        theme: ThemeData(
+          primarySwatch: Colors.deepPurple,
+        ),
+        home: FutureBuilder<String?>(
+          future: _getUserId(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final userId = snapshot.data;
+            if (userId == null) {
+              return const AuthScreen();
+            } else {
+              return const HomeScreen();
+            }
+          },
+        ),
       ),
     );
   }
@@ -116,53 +148,73 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = ThemeProvider.of(context)!;
+    final colors = theme.colors;
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: Drawer(
         elevation: 14,
         child: Container(
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
                 gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                  Color.fromARGB(255, 43, 0, 99),
-                  Color.fromARGB(255, 67, 2, 153),
+                  colors.drawerGradientStart,
+                  colors.drawerGradientEnd,
                 ])),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Usuario Conectado:",
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Color.fromARGB(255, 226, 205, 255))),
+                Text("Usuario Conectado:",
+                    style: TextStyle(fontSize: 14, color: colors.drawerText)),
                 Text(getStringPreference('username') ?? '',
-                    style: const TextStyle(
-                        fontSize: 20,
-                        color: Color.fromARGB(255, 226, 205, 255))),
-                const SizedBox(height: 10),
+                    style: TextStyle(fontSize: 20, color: colors.drawerText)),
+                const SizedBox(height: 20),
+                // Selector de tema
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.light_mode, color: colors.drawerText),
+                    Switch(
+                      value: theme.isDarkMode,
+                      onChanged: (value) {
+                        theme.toggleTheme(value);
+                      },
+                      activeColor: colors.appBarIcon,
+                    ),
+                    Icon(Icons.dark_mode, color: colors.drawerText),
+                  ],
+                ),
+                Text(
+                  theme.isDarkMode ? 'Modo Oscuro' : 'Modo Claro',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.drawerText,
+                  ),
+                ),
+                const SizedBox(height: 20),
                 ElevatedButton(
                     onPressed: () {
                       _logout(context);
                     },
                     child: const Text("Cerrar la Sesión")),
                 const SizedBox(height: 40),
-                const Text('EvaluApp 1.0.3 Build 26 - MikeMad 2025',
-                    style:
-                        TextStyle(color: Color.fromARGB(255, 226, 205, 255))),
+                Text('EvaluApp 1.0.3 Build 26 - MikeMad 2025',
+                    style: TextStyle(color: colors.drawerText)),
               ],
             )),
       ),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 85, 2, 194),
+        backgroundColor: colors.appBarBackground,
         centerTitle: true,
-        iconTheme:
-            const IconThemeData(color: Color.fromARGB(255, 189, 138, 255)),
-        title: const Text(
+        iconTheme: IconThemeData(color: colors.appBarIcon),
+        title: Text(
           'EvaluApp',
           style: TextStyle(
-            color: Color.fromARGB(255, 226, 209, 250),
+            color: colors.appBarTitle,
           ),
         ),
         actions: [
@@ -172,20 +224,20 @@ class _HomeScreenState extends State<HomeScreen> {
               _addNewMatter(context);
             },
             icon: const Icon(Icons.add),
-            color: const Color.fromARGB(255, 189, 138, 255),
-            focusColor: const Color.fromARGB(255, 226, 205, 255),
+            color: colors.appBarIcon,
+            focusColor: colors.appBarTitle,
           ),
         ],
       ),
       body: Container(
         alignment: Alignment.topCenter,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
             gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-              Color.fromARGB(255, 67, 2, 153),
-              Color.fromARGB(255, 14, 0, 32)
+              colors.backgroundGradientStart,
+              colors.backgroundGradientEnd
             ])),
         child: DisplayProgramData(matters: allMattersData),
       ),

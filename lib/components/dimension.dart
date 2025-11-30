@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/components/note.dart';
 import 'package:evaluapp/components/note_display_only.dart';
+import 'package:evaluapp/themes.dart';
 
 //*****************************************************************************************************/
 // Despliega una sola Dimension
@@ -84,14 +85,16 @@ class _DimensionState extends State<Dimension> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     // Actualizar el indicador * basado en el estado actual
     noHelperForRemoveWorstNote = widget.dimension.removeWorstNote ? '(*)' : '';
 
     final bool isFinal = widget.dimension.isFinal();
     final averageLabel = isFinal ? 'Promedio Final' : 'Promedio Parcial';
+
     return Card(
-      //color: const Color.fromARGB(255, 67, 2, 153),
-      color: const Color.fromARGB(255, 58, 0, 134),
+      color: colors.dimensionCardBackground,
       margin: const EdgeInsetsDirectional.all(8),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -101,8 +104,7 @@ class _DimensionState extends State<Dimension> {
             children: [
               Text(
                 widget.dimension.dimensionTitle,
-                style: const TextStyle(
-                    color: Color.fromARGB(255, 221, 201, 248), fontSize: 18),
+                style: TextStyle(color: colors.dimensionCardText, fontSize: 18),
               ),
               const SizedBox(
                 height: 8,
@@ -111,22 +113,19 @@ class _DimensionState extends State<Dimension> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(averageLabel,
-                      style: const TextStyle(
-                          color: Color.fromARGB(255, 221, 201, 248))),
+                      style: TextStyle(color: colors.dimensionCardText)),
                   const SizedBox(width: 8),
                   NoteDisplayOnly(value: widget.dimension.average),
                   const SizedBox(width: 8),
-                  const Text('Requerido',
-                      style:
-                          TextStyle(color: Color.fromARGB(255, 221, 201, 248))),
+                  Text('Requerido',
+                      style: TextStyle(color: colors.dimensionCardText)),
                   const SizedBox(width: 8),
                   NoteDisplayOnly(value: widget.dimension.minimumRequired),
                 ],
               ),
               const SizedBox(height: 8),
               Text('Notas $noHelperForRemoveWorstNote',
-                  style: const TextStyle(
-                      color: Color.fromARGB(255, 221, 201, 248))),
+                  style: TextStyle(color: colors.dimensionCardText)),
               const SizedBox(height: 8),
               // Casilleros de Notas ***************************************
               ...createNoteList(widget.dimension

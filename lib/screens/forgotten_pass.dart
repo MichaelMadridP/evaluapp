@@ -1,6 +1,7 @@
 import 'package:evaluapp/screens/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:evaluapp/themes.dart';
 
 class ForgottenPassScreen extends StatefulWidget {
   const ForgottenPassScreen({super.key});
@@ -25,51 +26,54 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
     return emailRegex.hasMatch(email);
   }
 
-  void _doRegister(BuildContext context) async {
+  void _sendRecoveryEmail(BuildContext context) async {
     String msg = '';
 
-    if ((!_isValidEmail(_emailController.text)) ||
-        (_emailController.text.isEmpty)) {
+    if (_emailController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Por favor ingresa un email válido'),
-        duration: Duration(seconds: 3), // Duración personalizada
+        content: Text('Por favor ingresa tu email'),
+        duration: Duration(seconds: 3),
       ));
       return;
     }
 
-    // Intentar el envio de la confirmación de email
-    try {
-      await FirebaseAuth.instance
-          .sendPasswordResetEmail(email: _emailController.text);
-
-      // Mensaje de éxito
-      if (!context.mounted) return;
+    if (!_isValidEmail(_emailController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text(
-            'Correo de restablecimiento enviado. Revisa tu bandeja de entrada.'),
+        content: Text('Por favor ingresa un email válido'),
         duration: Duration(seconds: 3),
       ));
+      return;
+    }
 
-      // Esperar a que el SnackBar desaparezca antes de navegar
+    // Intentar enviar el correo de recuperación
+    try {
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      await auth.sendPasswordResetEmail(email: _emailController.text);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text('Correo de recuperación enviado a ${_emailController.text}'),
+        duration: const Duration(seconds: 3),
+      ));
+
       await Future.delayed(const Duration(seconds: 3));
 
       if (!context.mounted) return;
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => const AuthScreen()));
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'invalid-email') {
-        msg = 'El correo electrónico no tiene un formato válido.';
-      } else if (e.code == 'user-not-found') {
-        msg = 'Error al enviar el correo de restablecimiento.';
+      if (e.code == 'user-not-found') {
+        msg = 'No se encontró un usuario con ese email.';
+      } else if (e.code == 'invalid-email') {
+        msg = 'El correo no tiene un formato válido.';
       } else {
-        msg = 'Error al enviar el correo de restablecimiento: ${e.message}';
+        msg = 'Error: ${e.message ?? e.code}';
       }
-    } catch (e) {
-      msg =
-          'Ocurrió un error inesperado. Por favor, inténtalo de nuevo más tarde.';
     }
 
     if (msg.isNotEmpty) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(msg),
         duration: const Duration(seconds: 3),
@@ -79,9 +83,11 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 183, 131, 252),
+        backgroundColor: colors.appBarBackground,
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -96,37 +102,34 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
             ),
           ],
         ),
-        title: const Text('Olvido de Contraseña'),
+        title: const Text('Recuperar Contraseña'),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
             gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-              Color.fromARGB(255, 67, 2, 153),
-              Color.fromARGB(255, 14, 0, 32)
-            ])),
+                colors: [colors.authBackground, colors.backgroundGradientEnd])),
         child: Center(
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 const SizedBox(height: 40),
-                const Text('EvaluApp',
+                Text('EvaluApp',
                     style: TextStyle(
-                      color: Color.fromARGB(255, 239, 227, 252),
+                      color: colors.authTitle,
                       fontSize: 30,
                     )),
                 const SizedBox(height: 20),
-                const Text('Tu evaluador predictivo de notas',
+                Text('Tu evaluador predictivo de notas',
                     style: TextStyle(
-                      color: Color.fromARGB(255, 226, 205, 250),
+                      color: colors.authSubtitle,
                       fontSize: 18,
                     )),
                 const SizedBox(height: 14),
                 Card(
-                  color: const Color.fromARGB(255, 61, 8, 131),
+                  color: colors.authCardBackground,
                   margin: const EdgeInsets.only(top: 20),
                   child: SingleChildScrollView(
                     child: Padding(
@@ -134,33 +137,32 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Ingresa tu email',
+                          Text('Recuperar Contraseña',
                               style: TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250),
+                                color: colors.authSubtitle,
                                 fontSize: 18,
                               )),
-                          const Center(
-                            child: Text(
-                                'Si este correo existe en nuestra base de datos, te enviaremos un correo con las instrucciones para recuperar tu contraseña.',
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 226, 205, 250),
-                                  fontSize: 14,
-                                )),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Ingresa tu email y te enviaremos un correo para recuperar tu contraseña',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: colors.authText,
+                              fontSize: 14,
+                            ),
                           ),
-                          const SizedBox(height: 14),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 20),
                           TextFormField(
                             controller: _emailController,
-                            style: const TextStyle(
-                                color: Color.fromARGB(255, 226, 205, 250)),
-                            decoration: const InputDecoration(
-                                labelStyle: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250)),
+                            style: TextStyle(color: colors.authText),
+                            decoration: InputDecoration(
+                                labelStyle:
+                                    TextStyle(color: colors.authInputLabel),
                                 labelText: 'Email',
                                 hintText: 'Email',
-                                icon: Icon(Icons.email),
-                                iconColor: Color.fromARGB(255, 226, 205, 250),
-                                border: OutlineInputBorder()),
+                                icon: const Icon(Icons.email),
+                                iconColor: colors.authInputIcon,
+                                border: const OutlineInputBorder()),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
@@ -172,20 +174,17 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                             },
                           ),
                           const SizedBox(height: 20),
-                          const SizedBox(height: 12),
                           TextButton(
                             onPressed: () {
-                              _doRegister(context);
+                              _sendRecoveryEmail(context);
                             },
                             style: TextButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 107, 68, 168),
+                                backgroundColor: colors.authButtonBackground,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(100))),
-                            child: const Text(
-                                '   Enviar Email de Recuperación   ',
+                            child: Text('   Enviar Correo   ',
                                 style: TextStyle(
-                                    color: Color.fromARGB(255, 226, 205, 250),
+                                    color: colors.authButtonText,
                                     fontSize: 14)),
                           ),
                         ],
@@ -197,9 +196,9 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                 const SizedBox(height: 12),
                 const SizedBox(height: 20),
                 const SizedBox(height: 50),
-                const Text('2024 © EvaluApp by Mikemad',
+                Text('2025 © EvaluApp by Mikemad',
                     style: TextStyle(
-                      color: Color.fromRGBO(179, 163, 197, 1),
+                      color: colors.authFooterText,
                       fontSize: 10,
                     )),
               ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/components/edit_dimension.dart';
 import 'package:evaluapp/components/note.dart';
+import 'package:evaluapp/themes.dart';
 
 // Esta clase edita sobre una variable local _matter, si todo va bien, copia
 // sobre el contenido sobre el parametro de entrada matter
@@ -61,6 +62,8 @@ class _EditMatterState extends State<EditMatter> {
       required String title,
       required String message,
       List<Widget> actions = const []}) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     showGeneralDialog(
         context: context,
         barrierDismissible: false,
@@ -75,7 +78,7 @@ class _EditMatterState extends State<EditMatter> {
             child: AlertDialog(
               title: Text(title),
               content: Text(message),
-              backgroundColor:const Color.fromARGB(255, 210, 186, 255),
+              backgroundColor: colors.editMatterBackground,
               actions: actions,
               shape: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16.0),
@@ -140,7 +143,8 @@ class _EditMatterState extends State<EditMatter> {
       openAnimatedDialog(
         context: context,
         title: 'Materia en uso',
-        message: 'Esta materia está en uso y al eliminarla se perderán sus notas.',
+        message:
+            'Esta materia está en uso y al eliminarla se perderán sus notas.',
         actions: [
           TextButton(
             onPressed: () {
@@ -152,7 +156,7 @@ class _EditMatterState extends State<EditMatter> {
             onPressed: () {
               // Confirmar la eliminación
               widget.onMatterDeleteCB(widget.idxMatter);
-              saveData();   // Actualizar la base de datos
+              saveData(); // Actualizar la base de datos
               Navigator.pop(context); // Cierra el diálogo
               Navigator.pop(context); // Cierra la pantalla actual
             },
@@ -162,7 +166,7 @@ class _EditMatterState extends State<EditMatter> {
       );
     } else {
       widget.onMatterDeleteCB(widget.idxMatter);
-      saveData();   // Actualizar la base de datos
+      saveData(); // Actualizar la base de datos
       Navigator.pop(context);
     }
   }
@@ -215,7 +219,6 @@ class _EditMatterState extends State<EditMatter> {
           ),
         ],
       );
-
     } else {
       // Si todo Ok, paso los datos al parent
       widget.matter.matterTitle = _controllerTextTitle.text;
@@ -231,8 +234,10 @@ class _EditMatterState extends State<EditMatter> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = ThemeProvider.of(context)!.colors;
+
     return Container(
-      color: const Color.fromARGB(255, 76, 31, 180),
+      color: colors.editMatterBackground,
       padding: const EdgeInsets.all(10),
       height: double.infinity,
       width: double.infinity,
@@ -240,8 +245,8 @@ class _EditMatterState extends State<EditMatter> {
         children: [
           Text(
             _actionText,
-            style: const TextStyle(
-              color: Color.fromARGB(255, 213, 198, 255),
+            style: TextStyle(
+              color: colors.editDimensionText,
               fontSize: 20,
             ),
           ),
@@ -249,28 +254,28 @@ class _EditMatterState extends State<EditMatter> {
             children: [
               Expanded(
                 child: TextField(
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: colors.editDimensionText),
                   controller: _controllerTextTitle,
                   keyboardType: TextInputType.name,
                   textCapitalization: TextCapitalization.words,
                   maxLength: 50,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Materia',
                     helperStyle: TextStyle(
-                      color: Color.fromARGB(255, 191, 170, 250),
+                      color: colors.editDimensionText.withOpacity(0.8),
                       fontSize: 12,
                     ),
                     labelStyle: TextStyle(
-                      color: Color.fromARGB(255, 191, 170, 250),
+                      color: colors.editDimensionText.withOpacity(0.8),
                     ),
                   ),
                 ),
               ),
               Column(
                 children: [
-                  const Text('Nota Objetivo',
-                      style:
-                          TextStyle(color: Color.fromARGB(255, 191, 170, 250))),
+                  Text('Nota Objetivo',
+                      style: TextStyle(
+                          color: colors.editDimensionText.withOpacity(0.8))),
                   Note(
                       iValue: _matter.targetNote,
                       label: '',
@@ -286,10 +291,10 @@ class _EditMatterState extends State<EditMatter> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'Dimensiones',
                 style: TextStyle(
-                  color: Color.fromARGB(255, 213, 198, 255),
+                  color: colors.editDimensionText,
                   fontSize: 19,
                 ),
               ),
@@ -309,9 +314,9 @@ class _EditMatterState extends State<EditMatter> {
                     },
                   );
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.add,
-                  color: Color.fromARGB(255, 213, 198, 255),
+                  color: colors.editDimensionText,
                 ),
               ),
             ],
@@ -323,7 +328,7 @@ class _EditMatterState extends State<EditMatter> {
                 return Dismissible(
                   key: ValueKey(_matter.dimension[index]),
                   background: Container(
-                    color: const Color.fromARGB(255, 65, 27, 153),
+                    color: colors.backgroundGradientStart,
                     child: const Center(
                       child: Icon(
                         Icons.delete,
@@ -360,9 +365,9 @@ class _EditMatterState extends State<EditMatter> {
               if (widget.action == ActionType.edit)
                 TextButton(
                   onPressed: onPressDelete,
-                  child: const Text('Eliminar Materia',
-                      style:
-                          TextStyle(color: Color.fromARGB(255, 163, 145, 168))),
+                  child: Text('Eliminar Materia',
+                      style: TextStyle(
+                          color: colors.editDimensionText.withOpacity(0.7))),
                 ),
               const SizedBox(width: 10),
               FilledButton(
