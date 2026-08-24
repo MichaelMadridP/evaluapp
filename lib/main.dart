@@ -183,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onChanged: (value) {
                         theme.toggleTheme(value);
                       },
-                      activeColor: colors.appBarIcon,
+                      activeThumbColor: colors.appBarIcon,
                     ),
                     Icon(Icons.dark_mode, color: colors.drawerText),
                   ],

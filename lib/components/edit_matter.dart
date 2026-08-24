@@ -262,11 +262,11 @@ class _EditMatterState extends State<EditMatter> {
                   decoration: InputDecoration(
                     labelText: 'Materia',
                     helperStyle: TextStyle(
-                      color: colors.editDimensionText.withOpacity(0.8),
+                      color: colors.editDimensionText,
                       fontSize: 12,
                     ),
                     labelStyle: TextStyle(
-                      color: colors.editDimensionText.withOpacity(0.8),
+                      color: colors.editDimensionText,
                     ),
                   ),
                 ),
@@ -274,8 +274,7 @@ class _EditMatterState extends State<EditMatter> {
               Column(
                 children: [
                   Text('Nota Objetivo',
-                      style: TextStyle(
-                          color: colors.editDimensionText.withOpacity(0.8))),
+                      style: TextStyle(color: colors.editDimensionText)),
                   Note(
                       iValue: _matter.targetNote,
                       label: '',
@@ -329,10 +328,10 @@ class _EditMatterState extends State<EditMatter> {
                   key: ValueKey(_matter.dimension[index]),
                   background: Container(
                     color: colors.backgroundGradientStart,
-                    child: const Center(
+                    child: Center(
                       child: Icon(
                         Icons.delete,
-                        color: Colors.white,
+                        color: colors.iconDeleteColor,
                       ),
                     ),
                   ),
@@ -354,8 +353,9 @@ class _EditMatterState extends State<EditMatter> {
           Text(
             'Ponderación Total: $_percentageTotal%',
             style: TextStyle(
-              color:
-                  (_percentageTotal == 100) ? Colors.white : Colors.redAccent,
+              color: (_percentageTotal == 100)
+                  ? colors.primaryTextColor
+                  : colors.errorTextColor,
             ),
           ),
           const SizedBox(height: 15),
@@ -366,8 +366,7 @@ class _EditMatterState extends State<EditMatter> {
                 TextButton(
                   onPressed: onPressDelete,
                   child: Text('Eliminar Materia',
-                      style: TextStyle(
-                          color: colors.editDimensionText.withOpacity(0.7))),
+                      style: TextStyle(color: colors.editDimensionText)),
                 ),
               const SizedBox(width: 10),
               FilledButton(

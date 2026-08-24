@@ -99,40 +99,31 @@ class _MatterState extends State<Matter> {
               const SizedBox(
                 height: 10,
               ),
-              Expanded(
-                flex: 0,
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(width: 10),
-                      Text(
-                        averageLabel,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colors.matterCardText,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      NoteDisplayOnly(value: widget.matter.average),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Requerido',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colors.matterCardText,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      NoteDisplayOnly(value: widget.matter.minimumRequired),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                    ],
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    averageLabel,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colors.matterCardText,
+                    ),
                   ),
-                ),
+                  NoteDisplayOnly(value: widget.matter.average),
+                  Text(
+                    'Requerido',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colors.matterCardText,
+                    ),
+                  ),
+                  NoteDisplayOnly(value: widget.matter.minimumRequired),
+                ],
               ),
               const SizedBox(
                 height: 1,

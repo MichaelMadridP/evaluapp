@@ -26,7 +26,7 @@ class Note extends StatefulWidget {
 class _NoteState extends State<Note> {
   // este controlador necesita eliminarse despues con dispose
   final _noteTextController = TextEditingController();
-  Color _textColor = Colors.blueAccent;
+  late Color _textColor;
 
   @override
   void dispose() {
@@ -36,25 +36,35 @@ class _NoteState extends State<Note> {
 
   @override
   void initState() {
-    if (widget.iValue != 0) {
-      _noteTextController.text = widget.iValue.toStringAsFixed(1);
-      if (widget.iValue < 4) {
-        _textColor = Colors.redAccent;
-      } else {
-        _textColor = Colors.blueAccent;
-      }
-    }
     super.initState();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final colors = ThemeProvider.of(context)!.colors;
+
+    if (widget.iValue != 0) {
+      _noteTextController.text = widget.iValue.toStringAsFixed(1);
+      if (widget.iValue < 4) {
+        _textColor = colors.noteFailColor;
+      } else {
+        _textColor = colors.notePassColor;
+      }
+    } else {
+      _textColor = colors.notePassColor;
+    }
+  }
+
   void _checkTxtChange(String value) {
+    final colors = ThemeProvider.of(context)!.colors;
     setState(
       () {
         if (value.isNotEmpty) {
           if (double.parse(value[0]) < 4) {
-            _textColor = Colors.redAccent;
+            _textColor = colors.noteFailColor;
           } else {
-            _textColor = Colors.blueAccent;
+            _textColor = colors.notePassColor;
           }
         }
       },
@@ -100,50 +110,50 @@ class _NoteState extends State<Note> {
     return widget.isActive
         ? // Si el widget esta activo
 
-        SizedBox(
-            width: 48,
-            child: Focus(
-              onFocusChange: (hasFocus) {
-                if (hasFocus == false) {
-                  _onNoteLostFocus();
-                }
+        Focus(
+            onFocusChange: (hasFocus) {
+              if (hasFocus == false) {
+                _onNoteLostFocus();
+              }
+            },
+            child: TextField(
+              onChanged: (value) {
+                _checkTxtChange(value);
               },
-              child: TextField(
-                onChanged: (value) {
-                  _checkTxtChange(value);
-                },
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp('[0-9]'))
-                ],
-                controller: _noteTextController,
-                maxLength: 2,
-                textAlign: TextAlign.end,
-                keyboardType: TextInputType.number,
-                style: TextStyle(color: _textColor),
-                decoration: InputDecoration(
-                  enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: colors.noteFieldBorder)),
-                  labelText: widget.label,
-                  labelStyle: TextStyle(
-                      color: colors.dimensionCardText.withOpacity(0.7)),
-                  counterText: '',
-                ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp('[0-9]'))
+              ],
+              controller: _noteTextController,
+              maxLength: 2,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: _textColor, fontSize: 14),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
+                enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: colors.noteFieldBorder)),
+                focusedBorder: OutlineInputBorder(
+                    borderSide:
+                        BorderSide(color: colors.noteFieldBorder, width: 2)),
+                labelText: widget.label,
+                labelStyle:
+                    TextStyle(color: colors.dimensionCardText, fontSize: 11),
+                floatingLabelBehavior: FloatingLabelBehavior.auto,
+                counterText: '',
               ),
             ),
           )
         // Retorna solo un container de decoracion si no está activo
         : Container(
+            height: 48,
             decoration: BoxDecoration(
               border: Border.all(
                   width: 1,
                   color: colors.noteFieldBorder,
                   style: BorderStyle.solid),
               borderRadius: BorderRadius.circular(6),
-            ),
-            width: 48,
-            height: 55,
-            child: const Center(
-              child: Text(''),
             ),
           );
   }

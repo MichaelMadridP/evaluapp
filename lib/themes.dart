@@ -53,6 +53,16 @@ class AppColors {
   final Color noteRed;
   final Color noteGrey;
 
+  // Colores para estados de notas (aprobado/reprobado)
+  final Color notePassColor;
+  final Color noteFailColor;
+
+  // Colores de texto y elementos generales
+  final Color primaryTextColor;
+  final Color errorTextColor;
+  final Color warningTextColor;
+  final Color iconDeleteColor;
+
   const AppColors({
     required this.backgroundGradientStart,
     required this.backgroundGradientEnd,
@@ -89,6 +99,12 @@ class AppColors {
     required this.noteYellow,
     required this.noteRed,
     required this.noteGrey,
+    required this.notePassColor,
+    required this.noteFailColor,
+    required this.primaryTextColor,
+    required this.errorTextColor,
+    required this.warningTextColor,
+    required this.iconDeleteColor,
   });
 }
 
@@ -117,7 +133,7 @@ const AppColors darkColors = AppColors(
 
   // Dimension Card
   dimensionCardBackground: Color.fromARGB(255, 58, 0, 134),
-  dimensionCardText: Color.fromARGB(255, 221, 201, 248),
+  dimensionCardText: Color.fromARGB(255, 244, 241, 248),
 
   // Edit
   editMatterBackground: Color.fromARGB(255, 107, 68, 168),
@@ -138,14 +154,26 @@ const AppColors darkColors = AppColors(
 
   // Campos de nota
   noteFieldBackground: Color.fromARGB(255, 221, 201, 248),
-  noteFieldText: Color.fromARGB(255, 14, 0, 32),
-  noteFieldBorder: Color.fromARGB(255, 221, 201, 248),
+  noteFieldText: Color.fromARGB(255, 218, 202, 238),
+  noteFieldBorder: Color.fromARGB(255, 97, 88, 109),
 
   // Semáforo de notas
-  noteGreen: Color.fromARGB(255, 117, 245, 66),
+  noteGreen: Color.fromARGB(255, 67, 10, 121),
   noteYellow: Colors.yellow,
-  noteRed: Colors.red,
-  noteGrey: Colors.grey,
+  noteRed: Color.fromARGB(255, 67, 10, 121),
+  noteGrey: Color.fromARGB(255, 67, 10, 121),
+
+  // Estados de notas
+  notePassColor:
+      Color.fromARGB(255, 121, 180, 255), // Azul suave para notas aprobadas
+  noteFailColor:
+      Color.fromARGB(255, 255, 107, 107), // Rojo suave para notas reprobadas
+
+  // Textos y elementos generales
+  primaryTextColor: Color.fromARGB(255, 226, 205, 250),
+  errorTextColor: Color.fromARGB(255, 255, 107, 107),
+  warningTextColor: Color.fromARGB(255, 255, 193, 7),
+  iconDeleteColor: Color.fromARGB(255, 255, 138, 138),
 );
 
 /// Paleta de colores para modo claro
@@ -173,7 +201,7 @@ const AppColors lightColors = AppColors(
 
   // Dimension Card
   dimensionCardBackground: Color.fromARGB(255, 235, 225, 255),
-  dimensionCardText: Color.fromARGB(255, 70, 30, 130),
+  dimensionCardText: Color.fromARGB(255, 69, 30, 128),
 
   // Edit
   editMatterBackground: Color.fromARGB(255, 200, 170, 240),
@@ -202,6 +230,17 @@ const AppColors lightColors = AppColors(
   noteYellow: Color.fromARGB(255, 255, 193, 7),
   noteRed: Color.fromARGB(255, 244, 67, 54),
   noteGrey: Color.fromARGB(255, 158, 158, 158),
+
+  // Estados de notas
+  notePassColor:
+      Color.fromARGB(255, 33, 150, 243), // Azul vibrante para notas aprobadas
+  noteFailColor: Color.fromARGB(255, 244, 67, 54), // Rojo para notas reprobadas
+
+  // Textos y elementos generales
+  primaryTextColor: Color.fromARGB(255, 40, 20, 80),
+  errorTextColor: Color.fromARGB(255, 211, 47, 47),
+  warningTextColor: Color.fromARGB(255, 245, 124, 0),
+  iconDeleteColor: Color.fromARGB(255, 244, 67, 54),
 );
 
 /// Provider de tema usando InheritedWidget

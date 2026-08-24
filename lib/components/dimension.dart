@@ -63,18 +63,23 @@ class _DimensionState extends State<Dimension> {
           setActive = false;
           iValue = 0;
         }
-        subList.add(Note(
-          iValue: iValue,
-          label: (thisNote + 1).toString().padLeft(2, '0'),
-          isActive: setActive,
-          idxNote: thisNote,
-          onNoteLostFocusCB: _updateNote,
+        subList.add(Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Note(
+              iValue: iValue,
+              label: (thisNote + 1).toString().padLeft(2, '0'),
+              isActive: setActive,
+              idxNote: thisNote,
+              onNoteLostFocusCB: _updateNote,
+            ),
+          ),
         ));
         thisNote++;
       }
 
       retList.add(Row(
-          mainAxisAlignment: MainAxisAlignment.center, children: [...subList]));
+          children: [...subList]));
       retList.add(const SizedBox(height: 8)); //Separador
       // Borrar la sublista para la siguiente iteracion
       subList.clear();
@@ -109,17 +114,17 @@ class _DimensionState extends State<Dimension> {
               const SizedBox(
                 height: 8,
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   Text(averageLabel,
                       style: TextStyle(color: colors.dimensionCardText)),
-                  const SizedBox(width: 8),
                   NoteDisplayOnly(value: widget.dimension.average),
-                  const SizedBox(width: 8),
                   Text('Requerido',
                       style: TextStyle(color: colors.dimensionCardText)),
-                  const SizedBox(width: 8),
                   NoteDisplayOnly(value: widget.dimension.minimumRequired),
                 ],
               ),
