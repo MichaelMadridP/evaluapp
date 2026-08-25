@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:evaluapp/data_model/model.dart';
+import 'package:evaluapp/data_model/data_connect.dart';
 import 'package:evaluapp/components/note.dart';
 import 'package:evaluapp/components/note_display_only.dart';
+import 'package:evaluapp/components/evaluation_detail_modal.dart';
 import 'package:evaluapp/themes.dart';
 
 //*****************************************************************************************************/
@@ -12,10 +14,12 @@ class Dimension extends StatefulWidget {
     super.key,
     required this.dimension,
     required this.onChanged,
+    this.matterTitle,
   });
 
   final DimensionData dimension;
   final void Function() onChanged;
+  final String? matterTitle;
 
   @override
   State<StatefulWidget> createState() {
@@ -34,6 +38,34 @@ class _DimensionState extends State<Dimension> {
       widget.dimension.calculate();
       widget.onChanged();
     });
+  }
+
+  void _openEvaluationDetail(int index) {
+    while (widget.dimension.evaluationDetails.length <= index) {
+      widget.dimension.evaluationDetails.add(EvaluationDetail());
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: true,
+      builder: (ctx) {
+        return EvaluationDetailModal(
+          matterTitle: widget.matterTitle ?? '',
+          dimensionTitle: widget.dimension.dimensionTitle,
+          noteIndex: index,
+          grade: (index < widget.dimension.noteList.length)
+              ? widget.dimension.noteList[index]
+              : 0.0,
+          detail: widget.dimension.evaluationDetails[index],
+          onSaveCB: () {
+            setState(() {});
+            saveData();
+          },
+        );
+      },
+    );
   }
 
   // Esta función despliega las casillas de notas de acuerdo a la cantidad configurada
@@ -56,6 +88,7 @@ class _DimensionState extends State<Dimension> {
     // Agregar las lineas de Notas según la cantidad indicada
     for (int lines = 0; lines < numLines; lines++) {
       for (int j = 0; j < notesBreakLine; j++) {
+        final int noteIndex = thisNote;
         if (thisNote < numNotesToDisplay) {
           setActive = true;
           iValue = widget.dimension.noteList[thisNote];
@@ -63,6 +96,12 @@ class _DimensionState extends State<Dimension> {
           setActive = false;
           iValue = 0;
         }
+
+        final EvaluationDetail? detail =
+            (noteIndex < widget.dimension.evaluationDetails.length)
+                ? widget.dimension.evaluationDetails[noteIndex]
+                : null;
+
         subList.add(Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -71,6 +110,9 @@ class _DimensionState extends State<Dimension> {
               label: (thisNote + 1).toString().padLeft(2, '0'),
               isActive: setActive,
               idxNote: thisNote,
+              evaluationDetail: detail,
+              onLongPress:
+                  setActive ? () => _openEvaluationDetail(noteIndex) : null,
               onNoteLostFocusCB: _updateNote,
             ),
           ),
@@ -78,8 +120,7 @@ class _DimensionState extends State<Dimension> {
         thisNote++;
       }
 
-      retList.add(Row(
-          children: [...subList]));
+      retList.add(Row(children: [...subList]));
       retList.add(const SizedBox(height: 8)); //Separador
       // Borrar la sublista para la siguiente iteracion
       subList.clear();

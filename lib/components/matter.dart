@@ -138,6 +138,7 @@ class _MatterState extends State<Matter> {
               for (int i = 0; i < widget.matter.dimension.length; i++)
                 Dimension(
                   key: ValueKey(widget.matter.dimension[i].id),
+                  matterTitle: widget.matter.matterTitle,
                   dimension: widget.matter.dimension[i],
                   onChanged: updateMatter,
                 ),

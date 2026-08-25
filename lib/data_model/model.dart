@@ -8,18 +8,111 @@ enum ActionType { add, edit }
 
 const uuid = Uuid();
 
+// Clase para almacenar los metadatos y plan de estudio de una evaluación/nota individual
+class EvaluationDetail {
+  EvaluationDetail({
+    this.date,
+    this.content = '',
+    this.confidenceLevel = 4,
+    this.notes = '',
+  });
+
+  DateTime? date;
+  String content;
+  int confidenceLevel; // Rango de 1 (muy bajo) a 7 (excelente)
+  String notes;
+
+  bool get hasData =>
+      date != null || content.trim().isNotEmpty || notes.trim().isNotEmpty;
+
+  String get dateFormatted {
+    if (date == null) return 'Sin fecha';
+    const months = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    return '${date!.day} ${months[date!.month - 1]} ${date!.year}';
+  }
+
+  String get confidenceLabel {
+    switch (confidenceLevel) {
+      case 1:
+        return 'Muy crítico (1)';
+      case 2:
+        return 'Bajo (2)';
+      case 3:
+        return 'Insuficiente (3)';
+      case 4:
+        return 'Aceptable (4)';
+      case 5:
+        return 'Bueno (5)';
+      case 6:
+        return 'Muy bueno (6)';
+      case 7:
+        return 'Excelente (7)';
+      default:
+        return 'Medio ($confidenceLevel)';
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'date': date?.toIso8601String(),
+      'content': content,
+      'confidenceLevel': confidenceLevel,
+      'notes': notes,
+    };
+  }
+
+  factory EvaluationDetail.fromMap(Map<String, dynamic> data) {
+    return EvaluationDetail(
+      date: data['date'] != null
+          ? DateTime.tryParse(data['date'].toString())
+          : null,
+      content: data['content']?.toString() ?? '',
+      confidenceLevel: (data['confidenceLevel'] is num)
+          ? (data['confidenceLevel'] as num).toInt().clamp(1, 7)
+          : 4,
+      notes: data['notes']?.toString() ?? '',
+    );
+  }
+}
+
+// Representación consolidada de una evaluación para la vista de Plan de Estudio
+class StudyEvaluationItem {
+  StudyEvaluationItem({
+    required this.matter,
+    required this.dimension,
+    required this.noteIndex,
+    required this.grade,
+    required this.detail,
+  });
+
+  final MatterData matter;
+  final DimensionData dimension;
+  final int noteIndex;
+  final double grade;
+  final EvaluationDetail detail;
+
+  bool get isPending => grade == 0;
+}
+
 // Clase para administrar una dimensión específica dentro de una materia
 // Pueden existir muchas dimensiones en cada materia, cada una con su
 // porcentaje de ponderación, todas juntas suman 100%
 class DimensionData {
-  DimensionData(
-      {required this.dimensionTitle,
-      required this.numNotes,
-      required this.noteList,
-      required this.percentageWeight,
-      required this.removeWorstNote,
-      required this.isDismissable})
-      : id = uuid.v4();
+  DimensionData({
+    required this.dimensionTitle,
+    required this.numNotes,
+    required this.noteList,
+    required this.percentageWeight,
+    required this.removeWorstNote,
+    required this.isDismissable,
+    List<EvaluationDetail>? evaluationDetails,
+  })  : id = uuid.v4(),
+        evaluationDetails = evaluationDetails ?? [] {
+    _syncEvaluationDetails();
+  }
 
   final String id;
   String dimensionTitle;
@@ -28,9 +121,19 @@ class DimensionData {
   int percentageWeight;
   bool removeWorstNote;
   bool isDismissable;
+  List<EvaluationDetail> evaluationDetails;
   double _average = 0;
   double _minimumRequired = 0;
   double targetNote = 4;
+
+  void _syncEvaluationDetails() {
+    while (evaluationDetails.length < numNotes) {
+      evaluationDetails.add(EvaluationDetail());
+    }
+    while (evaluationDetails.length > numNotes) {
+      evaluationDetails.removeLast();
+    }
+  }
 
   double get average {
     return _average;
@@ -41,6 +144,8 @@ class DimensionData {
   }
 
   void calculate() {
+    _syncEvaluationDetails();
+
     // Calcular el promedio y el requerido
     double sum = 0;
     List<double> onlyNzValues =
@@ -87,12 +192,13 @@ class DimensionData {
       if (noteList[i] == 0) {
         return false;
       }
-    } 
+    }
     return true;
   }
 
   // Serializacion para base de datos
   Map<String, dynamic> toMap() {
+    _syncEvaluationDetails();
     final Map<String, dynamic> data = <String, dynamic>{};
     data['dimensionTitle'] = dimensionTitle;
     data['numNotes'] = numNotes;
@@ -100,21 +206,42 @@ class DimensionData {
     data['percentageWeight'] = percentageWeight;
     data['removeWorstNote'] = removeWorstNote;
     data['isDismissable'] = isDismissable;
+    data['evaluationDetails'] =
+        evaluationDetails.map((e) => e.toMap()).toList();
     return data;
   }
 
   // DesSerializacion desde la base de datos
   factory DimensionData.fromMap(Map<String, dynamic> data) {
-    List<double> noteList=[];
+    List<double> noteList = [];
     for (var n in data['noteList']) {
       noteList.add(n.toDouble());
-    } 
+    }
 
     final dimensionTitle = data['dimensionTitle'];
     final numNotes = data['numNotes'];
     final percentageWeight = data['percentageWeight'];
     final removeWorstNote = data['removeWorstNote'];
     final isDismissable = data['isDismissable'];
+
+    List<EvaluationDetail> evaluationDetails = [];
+    if (data['evaluationDetails'] != null) {
+      if (data['evaluationDetails'] is List) {
+        for (var e in data['evaluationDetails']) {
+          if (e != null) {
+            evaluationDetails.add(
+                EvaluationDetail.fromMap(Map<String, dynamic>.from(e as Map)));
+          }
+        }
+      } else if (data['evaluationDetails'] is Map) {
+        for (var e in (data['evaluationDetails'] as Map).values) {
+          if (e != null) {
+            evaluationDetails.add(
+                EvaluationDetail.fromMap(Map<String, dynamic>.from(e as Map)));
+          }
+        }
+      }
+    }
 
     return DimensionData(
       dimensionTitle: dimensionTitle,
@@ -123,9 +250,9 @@ class DimensionData {
       percentageWeight: percentageWeight,
       removeWorstNote: removeWorstNote,
       isDismissable: isDismissable,
+      evaluationDetails: evaluationDetails,
     );
   }
-
 }
 
 // Clase para definir una materia, con sus propias dimensiones
@@ -348,7 +475,6 @@ class PeriodData {
     final createdAt = data['createdAt'] != null
         ? DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now()
         : DateTime.now();
-
     final period = PeriodData(
       id: id,
       name: name,
@@ -359,5 +485,28 @@ class PeriodData {
     );
     period.calculate();
     return period;
+  }
+
+  // Retorna todas las evaluaciones del período para la pantalla de Plan de Estudio
+  List<StudyEvaluationItem> getAllEvaluations() {
+    final List<StudyEvaluationItem> list = [];
+    for (var m in matters) {
+      for (var d in m.dimension) {
+        for (int i = 0; i < d.numNotes; i++) {
+          final grade = (i < d.noteList.length) ? d.noteList[i] : 0.0;
+          final detail = (i < d.evaluationDetails.length)
+              ? d.evaluationDetails[i]
+              : EvaluationDetail();
+          list.add(StudyEvaluationItem(
+            matter: m,
+            dimension: d,
+            noteIndex: i,
+            grade: grade,
+            detail: detail,
+          ));
+        }
+      }
+    }
+    return list;
   }
 }

@@ -9,6 +9,7 @@ import 'package:evaluapp/components/edit_matter.dart';
 import 'package:evaluapp/components/period_selector_modal.dart';
 import 'package:evaluapp/components/display_program_data.dart';
 import 'package:evaluapp/screens/auth.dart';
+import 'package:evaluapp/screens/study_plan_screen.dart';
 // Google Firebase Authentication
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -296,6 +297,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   icon:
+                      Icon(Icons.psychology_outlined, color: colors.drawerButton),
+                  label: const Text(
+                    "Plan de Estudio",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const StudyPlanScreen()),
+                    ).then((_) => setState(() {}));
+                  },
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        colors.drawerButton.withValues(alpha: 0.15),
+                    foregroundColor: colors.drawerText,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                          color: colors.drawerButton.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  icon:
                       Icon(Icons.calendar_month, color: colors.drawerButton),
                   label: const Text(
                     "Gestionar Períodos",
@@ -343,6 +374,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Plan de Estudio',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const StudyPlanScreen()),
+              ).then((_) => setState(() {}));
+            },
+            icon: const Icon(Icons.psychology_outlined),
+            color: colors.appBarIcon,
+          ),
+          IconButton(
+            tooltip: 'Agregar Materia',
             onPressed: () {
               _addNewMatter(context);
             },

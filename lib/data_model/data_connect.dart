@@ -46,19 +46,19 @@ Future<void> _executeSave() async {
   final userId = getStringPreference('userid');
 
   if (userId != null && userId.isNotEmpty) {
-    final DatabaseReference rootRef =
-        FirebaseDatabase.instance.ref('users/$userId');
-
-    // Construir mapa de períodos con clave periodId
-    final Map<String, dynamic> periodsMap = {};
-    for (var period in allPeriodsData) {
-      periodsMap[period.id] = period.toMap();
-    }
-
-    final currentActiveId = activePeriod?.id ??
-        (allPeriodsData.isNotEmpty ? allPeriodsData.first.id : '');
-
     try {
+      final DatabaseReference rootRef =
+          FirebaseDatabase.instance.ref('users/$userId');
+
+      // Construir mapa de períodos con clave periodId
+      final Map<String, dynamic> periodsMap = {};
+      for (var period in allPeriodsData) {
+        periodsMap[period.id] = period.toMap();
+      }
+
+      final currentActiveId = activePeriod?.id ??
+          (allPeriodsData.isNotEmpty ? allPeriodsData.first.id : '');
+
       await rootRef.update({
         'activePeriodId': currentActiveId,
         'data/periods': periodsMap,

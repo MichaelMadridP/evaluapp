@@ -126,6 +126,17 @@ class _EditDimensionState extends State<EditDimension> {
                             widget.dimension.numNotes) {
                           widget.dimension.noteList.removeLast();
                         }
+
+                        while (widget.dimension.evaluationDetails.length <
+                            widget.dimension.numNotes) {
+                          widget.dimension.evaluationDetails
+                              .add(EvaluationDetail());
+                        }
+
+                        while (widget.dimension.evaluationDetails.length >
+                            widget.dimension.numNotes) {
+                          widget.dimension.evaluationDetails.removeLast();
+                        }
                       });
                     },
                   ),
