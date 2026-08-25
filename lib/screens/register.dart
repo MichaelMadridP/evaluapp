@@ -65,7 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await userCredential.user?.updateDisplayName(_usernameController.text);
 
         // Crear el usuario en la base de datos
-        createNewUserOnDatabase(userCredential.user!.uid,
+        await createNewUserOnDatabase(userCredential.user!.uid,
             _usernameController.text, _emailController.text);
 
         if (!context.mounted) return;
@@ -95,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         msg =
             'La creación de cuentas con correo y contraseña no está habilitada.';
       } else {
-        msg = 'Error de registro: ${e.message!.isEmpty ? e.message : e.code}';
+        msg = 'Error de registro: ${e.message ?? e.code}';
       }
     }
 
@@ -116,21 +116,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colors.appBarBackground,
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const AuthScreen()));
-              },
-            ),
-          ],
+        iconTheme: IconThemeData(color: colors.appBarIcon),
+        title: Text(
+          'Registro',
+          style: TextStyle(color: colors.appBarTitle),
         ),
-        title: const Text('Registro'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const AuthScreen()));
+          },
+        ),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -143,25 +142,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 Text('EvaluApp',
                     style: TextStyle(
                       color: colors.authTitle,
-                      fontSize: 30,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                     )),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 Text('Tu evaluador predictivo de notas',
                     style: TextStyle(
                       color: colors.authSubtitle,
-                      fontSize: 18,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     )),
                 const SizedBox(height: 14),
                 Card(
                   color: colors.authCardBackground,
-                  margin: const EdgeInsets.only(top: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                        color: colors.matterCardBorder.withValues(alpha: 0.4)),
+                  ),
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: SingleChildScrollView(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -169,8 +176,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               style: TextStyle(
                                 color: colors.authSubtitle,
                                 fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               )),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           TextFormField(
                             controller: _usernameController,
                             style: TextStyle(color: colors.authText),
@@ -181,10 +189,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 hintText: 'Nombre',
                                 icon: const Icon(Icons.person),
                                 iconColor: colors.authInputIcon,
-                                border: const OutlineInputBorder()),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                      color: colors.authInputIcon, width: 2),
+                                )),
                             keyboardType: TextInputType.name,
                             autocorrect: false,
-                            textCapitalization: TextCapitalization.none,
+                            textCapitalization: TextCapitalization.words,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Ingresa tu nombre';
@@ -192,7 +207,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           TextFormField(
                             controller: _emailController,
                             style: TextStyle(color: colors.authText),
@@ -203,7 +218,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 hintText: 'Email',
                                 icon: const Icon(Icons.email),
                                 iconColor: colors.authInputIcon,
-                                border: const OutlineInputBorder()),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                      color: colors.authInputIcon, width: 2),
+                                )),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
@@ -214,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
                           TextFormField(
                             controller: _passwordController,
                             style: TextStyle(color: colors.authText),
@@ -225,44 +247,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 hintText: 'Contraseña',
                                 icon: const Icon(Icons.password),
                                 iconColor: colors.authInputIcon,
-                                border: const OutlineInputBorder()),
-                            keyboardType: TextInputType.emailAddress,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                      color: colors.authInputIcon, width: 2),
+                                )),
+                            keyboardType: TextInputType.visiblePassword,
                             autocorrect: false,
                             obscureText: true,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Por favor ingresa un email';
+                                return 'Por favor ingresa una contraseña';
                               }
                               return null;
                             },
                           ),
-                          const SizedBox(height: 12),
-                          TextButton(
+                          const SizedBox(height: 20),
+                          ElevatedButton(
                             onPressed: () {
                               _doRegister(context);
                             },
-                            style: TextButton.styleFrom(
+                            style: ElevatedButton.styleFrom(
                                 backgroundColor: colors.authButtonBackground,
+                                foregroundColor: colors.authButtonText,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 36, vertical: 12),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(100))),
-                            child: Text('   Crear Cuenta   ',
+                                    borderRadius: BorderRadius.circular(24))),
+                            child: const Text('Crear Cuenta',
                                 style: TextStyle(
-                                    color: colors.authButtonText,
-                                    fontSize: 14)),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 40),
-                const SizedBox(height: 12),
-                const SizedBox(height: 20),
-                const SizedBox(height: 50),
-                Text('2024 © EvaluApp by Mikemad',
+                const SizedBox(height: 30),
+                Text('2025 © EvaluApp by Mikemad',
                     style: TextStyle(
                       color: colors.authFooterText,
-                      fontSize: 10,
+                      fontSize: 11,
                     )),
               ],
             ),

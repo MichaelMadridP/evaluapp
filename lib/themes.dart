@@ -52,6 +52,8 @@ class AppColors {
   final Color noteYellow;
   final Color noteRed;
   final Color noteGrey;
+  final Color noteBadgeTextLight;
+  final Color noteBadgeTextDark;
 
   // Colores para estados de notas (aprobado/reprobado)
   final Color notePassColor;
@@ -99,6 +101,8 @@ class AppColors {
     required this.noteYellow,
     required this.noteRed,
     required this.noteGrey,
+    this.noteBadgeTextLight = const Color(0xFFFFFFFF),
+    this.noteBadgeTextDark = const Color(0xFF140F1E),
     required this.notePassColor,
     required this.noteFailColor,
     required this.primaryTextColor,
@@ -108,139 +112,140 @@ class AppColors {
   });
 }
 
-/// Paleta de colores para modo oscuro (actual)
+/// Paleta de colores para modo oscuro calibrada para WCAG 2.1 AA/AAA
 const AppColors darkColors = AppColors(
-  // Fondo principal - gradiente púrpura oscuro
-  backgroundGradientStart: Color.fromARGB(255, 67, 2, 153),
-  backgroundGradientEnd: Color.fromARGB(255, 14, 0, 32),
+  // Fondo principal - gradiente suave Slate / Deep Violet
+  backgroundGradientStart: Color(0xFF1A102C),
+  backgroundGradientEnd: Color(0xFF0E0818),
 
   // AppBar
-  appBarBackground: Color.fromARGB(255, 85, 2, 194),
-  appBarIcon: Color.fromARGB(255, 189, 138, 255),
-  appBarTitle: Color.fromARGB(255, 226, 209, 250),
+  appBarBackground: Color(0xFF261842),
+  appBarIcon: Color(0xFFD0BCFF),
+  appBarTitle: Color(0xFFF4EEFF),
 
   // Drawer
-  drawerGradientStart: Color.fromARGB(255, 43, 0, 99),
-  drawerGradientEnd: Color.fromARGB(255, 67, 2, 153),
-  drawerText: Color.fromARGB(255, 226, 205, 255),
-  drawerButton: Color.fromARGB(255, 226, 205, 255),
+  drawerGradientStart: Color(0xFF1E1234),
+  drawerGradientEnd: Color(0xFF120A20),
+  drawerText: Color(0xFFEBE2FA),
+  drawerButton: Color(0xFFD0BCFF),
 
   // Matter Card
-  matterCardBackground: Color.fromARGB(255, 39, 1, 83),
-  matterCardBorder: Color.fromARGB(255, 90, 75, 112),
-  matterCardTitle: Color.fromARGB(255, 221, 201, 248),
-  matterCardText: Color.fromARGB(255, 179, 157, 209),
+  matterCardBackground: Color(0xFF22163A),
+  matterCardBorder: Color(0xFF4E3E69),
+  matterCardTitle: Color(0xFFE8DEFF),
+  matterCardText: Color(0xFFC4B6DC),
 
   // Dimension Card
-  dimensionCardBackground: Color.fromARGB(255, 58, 0, 134),
-  dimensionCardText: Color.fromARGB(255, 244, 241, 248),
+  dimensionCardBackground: Color(0xFF2C1E4A),
+  dimensionCardText: Color(0xFFF0EAFA),
 
-  // Edit
-  editMatterBackground: Color.fromARGB(255, 107, 68, 168),
-  editDimensionBackground: Color.fromARGB(255, 162, 123, 255),
-  editDimensionText: Color.fromARGB(255, 22, 20, 26),
+  // Edit Modal & Sub-cards
+  editMatterBackground: Color(0xFF1C1230),
+  editDimensionBackground: Color(0xFF281C44),
+  editDimensionText: Color(0xFFF0EAFA),
 
   // Autenticación
-  authBackground: Color.fromARGB(255, 67, 2, 153),
-  authCardBackground: Color.fromARGB(255, 61, 8, 131),
-  authTitle: Color.fromARGB(255, 239, 227, 252),
-  authSubtitle: Color.fromARGB(255, 226, 205, 250),
-  authText: Color.fromARGB(255, 226, 205, 250),
-  authInputLabel: Color.fromARGB(255, 226, 205, 250),
-  authInputIcon: Color.fromARGB(255, 226, 205, 250),
-  authButtonBackground: Color.fromARGB(255, 107, 68, 168),
-  authButtonText: Color.fromARGB(255, 226, 205, 250),
-  authFooterText: Color.fromRGBO(179, 163, 197, 1),
+  authBackground: Color(0xFF1A102C),
+  authCardBackground: Color(0xFF24183E),
+  authTitle: Color(0xFFF4EEFF),
+  authSubtitle: Color(0xFFC4B6DC),
+  authText: Color(0xFFF0EAFA),
+  authInputLabel: Color(0xFFC4B6DC),
+  authInputIcon: Color(0xFFD0BCFF),
+  authButtonBackground: Color(0xFF7C3AED),
+  authButtonText: Color(0xFFFFFFFF),
+  authFooterText: Color(0xFFA899C0),
 
   // Campos de nota
-  noteFieldBackground: Color.fromARGB(255, 221, 201, 248),
-  noteFieldText: Color.fromARGB(255, 218, 202, 238),
-  noteFieldBorder: Color.fromARGB(255, 97, 88, 109),
+  noteFieldBackground: Color(0xFF302250),
+  noteFieldText: Color(0xFFFFFFFF),
+  noteFieldBorder: Color(0xFF5C4B7A),
 
-  // Semáforo de notas
-  noteGreen: Color.fromARGB(255, 67, 10, 121),
-  noteYellow: Colors.yellow,
-  noteRed: Color.fromARGB(255, 67, 10, 121),
-  noteGrey: Color.fromARGB(255, 67, 10, 121),
+  // Semáforo de notas (alto contraste)
+  noteGreen: Color(0xFF1E3A8A), // Azul oscuro (Blue 900, CR 9.81:1 con blanco)
+  noteYellow: Color(0xFFF59E0B), // Amber (CR 8.76:1 con texto oscuro)
+  noteRed: Color(0xFFB91C1C), // Crimson (CR 6.47:1 con blanco)
+  noteGrey: Color(0xFF475569), // Slate (CR 7.58:1 con blanco)
+  noteBadgeTextLight: Color(0xFFFFFFFF),
+  noteBadgeTextDark: Color(0xFF140F1E),
 
-  // Estados de notas
-  notePassColor:
-      Color.fromARGB(255, 121, 180, 255), // Azul suave para notas aprobadas
-  noteFailColor:
-      Color.fromARGB(255, 255, 107, 107), // Rojo suave para notas reprobadas
+  // Estados de notas (alto contraste sobre fondo oscuro #2C1E4A)
+  notePassColor: Color(0xFF64B5F6), // Azul suave 300 (CR 6.81:1)
+  noteFailColor: Color(0xFFFF6E6E), // Coral suave 300 (CR 5.54:1)
 
   // Textos y elementos generales
-  primaryTextColor: Color.fromARGB(255, 226, 205, 250),
-  errorTextColor: Color.fromARGB(255, 255, 107, 107),
-  warningTextColor: Color.fromARGB(255, 255, 193, 7),
-  iconDeleteColor: Color.fromARGB(255, 255, 138, 138),
+  primaryTextColor: Color(0xFFF0EAFA),
+  errorTextColor: Color(0xFFFF8080),
+  warningTextColor: Color(0xFFFFC107),
+  iconDeleteColor: Color(0xFFFF7878),
 );
 
-/// Paleta de colores para modo claro
+/// Paleta de colores para modo claro calibrada para WCAG 2.1 AA/AAA
 const AppColors lightColors = AppColors(
-  // Fondo principal - gradiente púrpura claro
-  backgroundGradientStart: Color.fromARGB(255, 240, 230, 255),
-  backgroundGradientEnd: Color.fromARGB(255, 250, 248, 255),
+  // Fondo principal - tonos marfil lavanda limpios
+  backgroundGradientStart: Color(0xFFF8F6FC),
+  backgroundGradientEnd: Color(0xFFF0ECF8),
 
-  // AppBar
-  appBarBackground: Color.fromARGB(255, 155, 100, 230),
-  appBarIcon: Color.fromARGB(255, 90, 40, 180),
-  appBarTitle: Color.fromARGB(255, 255, 255, 255),
+  // AppBar - Púrpura profundo de alta autoridad con elementos blancos
+  appBarBackground: Color(0xFF673AB7),
+  appBarIcon: Color(0xFFFFFFFF),
+  appBarTitle: Color(0xFFFFFFFF),
 
   // Drawer
-  drawerGradientStart: Color.fromARGB(255, 200, 170, 255),
-  drawerGradientEnd: Color.fromARGB(255, 180, 140, 255),
-  drawerText: Color.fromARGB(255, 40, 20, 80),
-  drawerButton: Color.fromARGB(255, 40, 20, 80),
+  drawerGradientStart: Color(0xFFF5F0FC),
+  drawerGradientEnd: Color(0xFFEBE2F8),
+  drawerText: Color(0xFF211438),
+  drawerButton: Color(0xFF673AB7),
 
-  // Matter Card
-  matterCardBackground: Color.fromARGB(255, 245, 240, 255),
-  matterCardBorder: Color.fromARGB(255, 180, 150, 220),
-  matterCardTitle: Color.fromARGB(255, 80, 40, 140),
-  matterCardText: Color.fromARGB(255, 100, 60, 160),
+  // Matter Card - Tarjeta blanca definida con borde sutil
+  matterCardBackground: Color(0xFFFFFFFF),
+  matterCardBorder: Color(0xFFDCD2EB),
+  matterCardTitle: Color(0xFF3C1C73),
+  matterCardText: Color(0xFF554173),
 
   // Dimension Card
-  dimensionCardBackground: Color.fromARGB(255, 235, 225, 255),
-  dimensionCardText: Color.fromARGB(255, 69, 30, 128),
+  dimensionCardBackground: Color(0xFFF6F2FC),
+  dimensionCardText: Color(0xFF261840),
 
-  // Edit
-  editMatterBackground: Color.fromARGB(255, 200, 170, 240),
-  editDimensionBackground: Color.fromARGB(255, 220, 200, 255),
-  editDimensionText: Color.fromARGB(255, 40, 20, 80),
+  // Edit Modal & Sub-cards
+  editMatterBackground: Color(0xFFFFFFFF),
+  editDimensionBackground: Color(0xFFF5F0FC),
+  editDimensionText: Color(0xFF211438),
 
   // Autenticación
-  authBackground: Color.fromARGB(255, 240, 230, 255),
-  authCardBackground: Color.fromARGB(255, 250, 245, 255),
-  authTitle: Color.fromARGB(255, 70, 30, 130),
-  authSubtitle: Color.fromARGB(255, 100, 60, 160),
-  authText: Color.fromARGB(255, 100, 60, 160),
-  authInputLabel: Color.fromARGB(255, 100, 60, 160),
-  authInputIcon: Color.fromARGB(255, 100, 60, 160),
-  authButtonBackground: Color.fromARGB(255, 155, 100, 230),
-  authButtonText: Color.fromARGB(255, 255, 255, 255),
-  authFooterText: Color.fromARGB(255, 120, 80, 180),
+  authBackground: Color(0xFFF8F6FC),
+  authCardBackground: Color(0xFFFFFFFF),
+  authTitle: Color(0xFF361869),
+  authSubtitle: Color(0xFF5A4678),
+  authText: Color(0xFF211438),
+  authInputLabel: Color(0xFF5A4678),
+  authInputIcon: Color(0xFF673AB7),
+  authButtonBackground: Color(0xFF673AB7),
+  authButtonText: Color(0xFFFFFFFF),
+  authFooterText: Color(0xFF6E5F87),
 
   // Campos de nota
-  noteFieldBackground: Color.fromARGB(255, 255, 255, 255),
-  noteFieldText: Color.fromARGB(255, 40, 20, 80),
-  noteFieldBorder: Color.fromARGB(255, 180, 150, 220),
+  noteFieldBackground: Color(0xFFFFFFFF),
+  noteFieldText: Color(0xFF211438),
+  noteFieldBorder: Color(0xFFC3B4DA),
 
-  // Semáforo de notas (mantener los mismos colores funcionales)
-  noteGreen: Color.fromARGB(255, 76, 175, 80),
-  noteYellow: Color.fromARGB(255, 255, 193, 7),
-  noteRed: Color.fromARGB(255, 244, 67, 54),
-  noteGrey: Color.fromARGB(255, 158, 158, 158),
+  // Semáforo de notas (alto contraste)
+  noteGreen: Color(0xFF1E3A8A), // Azul oscuro (Blue 900, CR 9.81:1 con blanco)
+  noteYellow: Color(0xFFF59E0B),
+  noteRed: Color(0xFFB91C1C),
+  noteGrey: Color(0xFF475569),
+  noteBadgeTextLight: Color(0xFFFFFFFF),
+  noteBadgeTextDark: Color(0xFF140F1E),
 
-  // Estados de notas
-  notePassColor:
-      Color.fromARGB(255, 33, 150, 243), // Azul vibrante para notas aprobadas
-  noteFailColor: Color.fromARGB(255, 244, 67, 54), // Rojo para notas reprobadas
+  // Estados de notas (alto contraste sobre fondo claro #F6F2FC)
+  notePassColor: Color(0xFF105CC4), // Azul profundo 700 (CR 5.68:1)
+  noteFailColor: Color(0xFFC61818), // Rojo profundo 700 (CR 5.37:1)
 
   // Textos y elementos generales
-  primaryTextColor: Color.fromARGB(255, 40, 20, 80),
-  errorTextColor: Color.fromARGB(255, 211, 47, 47),
-  warningTextColor: Color.fromARGB(255, 245, 124, 0),
-  iconDeleteColor: Color.fromARGB(255, 244, 67, 54),
+  primaryTextColor: Color(0xFF211438),
+  errorTextColor: Color(0xFFC61818),
+  warningTextColor: Color(0xFFB46400),
+  iconDeleteColor: Color(0xFFD21E1E),
 );
 
 /// Provider de tema usando InheritedWidget

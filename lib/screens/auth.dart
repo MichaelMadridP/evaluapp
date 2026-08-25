@@ -67,7 +67,7 @@ class _AuthScreenState extends State<AuthScreen> {
         msg = 'Usuario o Contraseña incorrecta.';
       } else {
         // Otros errores
-        msg = 'Error de ingreso: ${e.message!.isEmpty ? e.message : e.code}';
+        msg = 'Error de ingreso: ${e.message ?? e.code}';
       }
     }
     if (msg.isNotEmpty) {
@@ -97,21 +97,29 @@ class _AuthScreenState extends State<AuthScreen> {
                 Text('EvaluApp',
                     style: TextStyle(
                       color: colors.authTitle,
-                      fontSize: 30,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                     )),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 Text('Tu evaluador predictivo de notas',
                     style: TextStyle(
                       color: colors.authSubtitle,
-                      fontSize: 18,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     )),
                 const SizedBox(height: 14),
                 Card(
                   color: colors.authCardBackground,
-                  margin: const EdgeInsets.only(top: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                        color: colors.matterCardBorder.withValues(alpha: 0.4)),
+                  ),
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: SingleChildScrollView(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -119,8 +127,9 @@ class _AuthScreenState extends State<AuthScreen> {
                               style: TextStyle(
                                 color: colors.authSubtitle,
                                 fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               )),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           TextFormField(
                             controller: _emailController,
                             style: TextStyle(color: colors.authText),
@@ -131,7 +140,14 @@ class _AuthScreenState extends State<AuthScreen> {
                                 hintText: 'Email',
                                 icon: Icon(Icons.email),
                                 iconColor: colors.authInputIcon,
-                                border: const OutlineInputBorder()),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                      color: colors.authInputIcon, width: 2),
+                                )),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
@@ -142,7 +158,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 16),
                           TextFormField(
                             controller: _passwordController,
                             style: TextStyle(color: colors.authText),
@@ -153,7 +169,14 @@ class _AuthScreenState extends State<AuthScreen> {
                                 hintText: 'Contraseña',
                                 icon: Icon(Icons.password),
                                 iconColor: colors.authInputIcon,
-                                border: const OutlineInputBorder()),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                      color: colors.authInputIcon, width: 2),
+                                )),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             obscureText: true,
@@ -164,6 +187,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               return null;
                             },
                           ),
+                          const SizedBox(height: 8),
                           TextButton(
                             onPressed: () {
                               Navigator.pushReplacement(
@@ -174,28 +198,33 @@ class _AuthScreenState extends State<AuthScreen> {
                             },
                             child: Text('¿Olvidaste tu contraseña?',
                                 style: TextStyle(
-                                    color: colors.authSubtitle, fontSize: 14)),
+                                    color: colors.authSubtitle,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500)),
                           ),
                           const SizedBox(height: 12),
-                          TextButton(
+                          ElevatedButton(
                             onPressed: () {
                               _doLogin(context);
                             },
-                            style: TextButton.styleFrom(
+                            style: ElevatedButton.styleFrom(
                                 backgroundColor: colors.authButtonBackground,
+                                foregroundColor: colors.authButtonText,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 36, vertical: 12),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(100))),
-                            child: Text('   Iniciar Sesión   ',
+                                    borderRadius: BorderRadius.circular(24))),
+                            child: const Text('Iniciar Sesión',
                                 style: TextStyle(
-                                    color: colors.authButtonText,
-                                    fontSize: 14)),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
                 TextButton(
                     onPressed: () {
                       if (!context.mounted) return;
@@ -204,18 +233,17 @@ class _AuthScreenState extends State<AuthScreen> {
                           MaterialPageRoute(
                               builder: (context) => const RegisterScreen()));
                     },
-                    child: Text('¿No tienes cuenta?',
+                    child: Text('¿No tienes cuenta? Regístrate',
                         style: TextStyle(
                           color: colors.authSubtitle,
                           fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ))),
-                const SizedBox(height: 12),
-                const SizedBox(height: 20),
-                const SizedBox(height: 50),
+                const SizedBox(height: 30),
                 Text('2025 © EvaluApp by Mikemad',
                     style: TextStyle(
                       color: colors.authFooterText,
-                      fontSize: 10,
+                      fontSize: 11,
                     )),
               ],
             ),

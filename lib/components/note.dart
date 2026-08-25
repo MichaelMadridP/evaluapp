@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Para usar FilteringTextInputFormatter
+import 'package:flutter/services.dart';
 import 'package:evaluapp/themes.dart';
 
 class Note extends StatefulWidget {
-  const Note(
-      {super.key,
-      required this.iValue,
-      required this.label,
-      required this.isActive,
-      required this.idxNote,
-      required this.onNoteLostFocusCB});
+  const Note({
+    super.key,
+    required this.iValue,
+    required this.label,
+    required this.isActive,
+    required this.idxNote,
+    required this.onNoteLostFocusCB,
+  });
 
   final double iValue;
   final String label;
@@ -24,7 +25,6 @@ class Note extends StatefulWidget {
 }
 
 class _NoteState extends State<Note> {
-  // este controlador necesita eliminarse despues con dispose
   final _noteTextController = TextEditingController();
   late Color _textColor;
 
@@ -34,73 +34,80 @@ class _NoteState extends State<Note> {
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
+  void _syncControllerWithProps(AppColors colors) {
+    if (widget.iValue > 0) {
+      _noteTextController.text = widget.iValue.toStringAsFixed(1);
+      _textColor = (widget.iValue < 4.0) ? colors.noteFailColor : colors.notePassColor;
+    } else {
+      _noteTextController.text = '';
+      _textColor = colors.notePassColor;
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final colors = ThemeProvider.of(context)!.colors;
+    _syncControllerWithProps(colors);
+  }
 
-    if (widget.iValue != 0) {
-      _noteTextController.text = widget.iValue.toStringAsFixed(1);
-      if (widget.iValue < 4) {
-        _textColor = colors.noteFailColor;
-      } else {
-        _textColor = colors.notePassColor;
-      }
-    } else {
-      _textColor = colors.notePassColor;
+  @override
+  void didUpdateWidget(Note oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.iValue != widget.iValue) {
+      final colors = ThemeProvider.of(context)!.colors;
+      _syncControllerWithProps(colors);
     }
   }
 
   void _checkTxtChange(String value) {
     final colors = ThemeProvider.of(context)!.colors;
-    setState(
-      () {
-        if (value.isNotEmpty) {
-          if (double.parse(value[0]) < 4) {
+    setState(() {
+      if (value.isNotEmpty) {
+        final clean = value.replaceAll(',', '.');
+        final parsed = double.tryParse(clean);
+        if (parsed != null) {
+          final firstDigit = (parsed >= 10) ? parsed / 10 : parsed;
+          _textColor = (firstDigit < 4.0) ? colors.noteFailColor : colors.notePassColor;
+        } else {
+          final firstChar = double.tryParse(value[0]);
+          if (firstChar != null && firstChar < 4.0) {
             _textColor = colors.noteFailColor;
           } else {
             _textColor = colors.notePassColor;
           }
         }
-      },
-    );
+      }
+    });
   }
 
   void _onNoteLostFocus() {
-    final currentValue = _noteTextController.text;
+    final rawText = _noteTextController.text.trim();
+    final cleanValue = rawText.replaceAll(',', '.');
     double value = 0;
 
-    setState(
-      () {
-        if (currentValue.isNotEmpty) {
-          if ((double.parse(currentValue) >= 1) &&
-              (double.parse(currentValue) <= 7)) {
-            value = double.parse(currentValue);
-            _noteTextController.text = value.toStringAsFixed(1);
-          } else {
-            if ((double.parse(currentValue) >= 10) &&
-                (double.parse(currentValue) <= 70)) {
-              value = double.parse(currentValue) / 10;
-              _noteTextController.text = value.toStringAsFixed(1);
-            } else {
-              value = 0;
-              _noteTextController.text = '';
-            }
-          }
-
-          // Actualizo la dimension
-          widget.onNoteLostFocusCB(widget.idxNote, value);
-        } else {
-          // Si no tiene valor, pongo 0 para que no se muestre
-          widget.onNoteLostFocusCB(widget.idxNote, 0);
+    if (cleanValue.isNotEmpty) {
+      final parsed = double.tryParse(cleanValue);
+      if (parsed != null) {
+        if (parsed >= 1.0 && parsed <= 7.0) {
+          value = parsed;
+        } else if (parsed >= 10.0 && parsed <= 70.0) {
+          value = parsed / 10.0;
         }
-      },
-    );
+      }
+    }
+
+    setState(() {
+      final colors = ThemeProvider.of(context)!.colors;
+      if (value > 0) {
+        _noteTextController.text = value.toStringAsFixed(1);
+        _textColor = (value < 4.0) ? colors.noteFailColor : colors.notePassColor;
+      } else {
+        _noteTextController.text = '';
+        _textColor = colors.notePassColor;
+      }
+      widget.onNoteLostFocusCB(widget.idxNote, value);
+    });
   }
 
   @override
@@ -108,33 +115,32 @@ class _NoteState extends State<Note> {
     final colors = ThemeProvider.of(context)!.colors;
 
     return widget.isActive
-        ? // Si el widget esta activo
-
-        Focus(
+        ? Focus(
             onFocusChange: (hasFocus) {
-              if (hasFocus == false) {
+              if (!hasFocus) {
                 _onNoteLostFocus();
               }
             },
             child: TextField(
-              onChanged: (value) {
-                _checkTxtChange(value);
-              },
+              onChanged: _checkTxtChange,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp('[0-9]'))
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
               ],
               controller: _noteTextController,
-              maxLength: 2,
+              maxLength: 4,
               textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              style: TextStyle(color: _textColor, fontSize: 14),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(
+                  color: _textColor, fontSize: 14, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
                 enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: colors.noteFieldBorder)),
                 focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                     borderSide:
                         BorderSide(color: colors.noteFieldBorder, width: 2)),
                 labelText: widget.label,
@@ -145,7 +151,6 @@ class _NoteState extends State<Note> {
               ),
             ),
           )
-        // Retorna solo un container de decoracion si no está activo
         : Container(
             height: 48,
             decoration: BoxDecoration(
@@ -153,7 +158,7 @@ class _NoteState extends State<Note> {
                   width: 1,
                   color: colors.noteFieldBorder,
                   style: BorderStyle.solid),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
             ),
           );
   }

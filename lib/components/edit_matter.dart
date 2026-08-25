@@ -70,14 +70,23 @@ class _EditMatterState extends State<EditMatter> {
         barrierLabel: '',
         transitionDuration: const Duration(milliseconds: 150),
         pageBuilder: (context, animation1, animation2) {
-          return Container();
-        },
-        transitionBuilder: (context, a1, a2, widget) {
-          return ScaleTransition(
-            scale: Tween<double>(begin: 0.5, end: 1.0).animate(a1),
+          return Theme(
+            data: Theme.of(context).copyWith(
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: colors.editDimensionText,
+                ),
+              ),
+            ),
             child: AlertDialog(
-              title: Text(title),
-              content: Text(message),
+              title: Text(
+                title,
+                style: TextStyle(color: colors.editDimensionText),
+              ),
+              content: Text(
+                message,
+                style: TextStyle(color: colors.editDimensionText),
+              ),
               backgroundColor: colors.editMatterBackground,
               actions: actions,
               shape: OutlineInputBorder(
@@ -85,6 +94,12 @@ class _EditMatterState extends State<EditMatter> {
                 borderSide: BorderSide.none,
               ),
             ),
+          );
+        },
+        transitionBuilder: (context, a1, a2, widget) {
+          return ScaleTransition(
+            scale: Tween<double>(begin: 0.5, end: 1.0).animate(a1),
+            child: widget,
           );
         });
   }
@@ -103,7 +118,7 @@ class _EditMatterState extends State<EditMatter> {
         _matter.dimension.add(DimensionData(
             dimensionTitle: widget.matter.dimension[i].dimensionTitle,
             numNotes: widget.matter.dimension[i].numNotes,
-            noteList: widget.matter.dimension[i].noteList,
+            noteList: List<double>.from(widget.matter.dimension[i].noteList),
             percentageWeight: widget.matter.dimension[i].percentageWeight,
             removeWorstNote: widget.matter.dimension[i].removeWorstNote,
             isDismissable: widget.matter.dimension[i].isDismissable));
@@ -248,8 +263,10 @@ class _EditMatterState extends State<EditMatter> {
             style: TextStyle(
               color: colors.editDimensionText,
               fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -271,22 +288,31 @@ class _EditMatterState extends State<EditMatter> {
                   ),
                 ),
               ),
+              const SizedBox(width: 12),
               Column(
                 children: [
                   Text('Nota Objetivo',
-                      style: TextStyle(color: colors.editDimensionText)),
-                  Note(
-                      iValue: _matter.targetNote,
-                      label: '',
-                      isActive: true,
-                      idxNote: 0,
-                      onNoteLostFocusCB: (idx, value) {
-                        _matter.targetNote = value;
-                      }),
+                      style: TextStyle(
+                          color: colors.editDimensionText,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12)),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: 60,
+                    child: Note(
+                        iValue: _matter.targetNote,
+                        label: '',
+                        isActive: true,
+                        idxNote: 0,
+                        onNoteLostFocusCB: (idx, value) {
+                          _matter.targetNote = value;
+                        }),
+                  ),
                 ],
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -294,7 +320,8 @@ class _EditMatterState extends State<EditMatter> {
                 'Dimensiones',
                 style: TextStyle(
                   color: colors.editDimensionText,
-                  fontSize: 19,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               IconButton(
@@ -325,9 +352,13 @@ class _EditMatterState extends State<EditMatter> {
               itemCount: _matter.dimension.length,
               itemBuilder: (ctx, index) {
                 return Dismissible(
-                  key: ValueKey(_matter.dimension[index]),
+                  key: ValueKey(_matter.dimension[index].id),
                   background: Container(
-                    color: colors.backgroundGradientStart,
+                    margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+                    decoration: BoxDecoration(
+                      color: colors.errorTextColor.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Center(
                       child: Icon(
                         Icons.delete,
@@ -342,6 +373,7 @@ class _EditMatterState extends State<EditMatter> {
                     });
                   },
                   child: EditDimension(
+                    key: ValueKey(_matter.dimension[index].id),
                     dimension: _matter.dimension[index],
                     onChanged: updateDimension,
                   ),
@@ -349,13 +381,15 @@ class _EditMatterState extends State<EditMatter> {
               },
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             'Ponderación Total: $_percentageTotal%',
             style: TextStyle(
               color: (_percentageTotal == 100)
                   ? colors.primaryTextColor
                   : colors.errorTextColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
           ),
           const SizedBox(height: 15),
@@ -366,10 +400,13 @@ class _EditMatterState extends State<EditMatter> {
                 TextButton(
                   onPressed: onPressDelete,
                   child: Text('Eliminar Materia',
-                      style: TextStyle(color: colors.editDimensionText)),
+                      style: TextStyle(
+                          color: colors.iconDeleteColor,
+                          fontWeight: FontWeight.w600)),
                 ),
-              const SizedBox(width: 10),
-              FilledButton(
+              if (widget.action == ActionType.edit)
+                const SizedBox(width: 8),
+              FilledButton.tonal(
                 onPressed: () {
                   Navigator.pop(context);
                 },

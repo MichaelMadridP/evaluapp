@@ -30,11 +30,7 @@ class DimensionData {
   bool isDismissable;
   double _average = 0;
   double _minimumRequired = 0;
-  double _targetNote = 4;
-
-  set targetNote(double value) {
-    _targetNote = value;
-  }
+  double targetNote = 4;
 
   double get average {
     return _average;
@@ -80,7 +76,7 @@ class DimensionData {
     numNotesActual = (noteRemoved) ? numNotes - 1 : numNotes;
     if ((numNotesActual - cNotes) != 0) {
       _minimumRequired =
-          ((_targetNote * numNotesActual) - sum) / (numNotesActual - cNotes);
+          ((targetNote * numNotesActual) - sum) / (numNotesActual - cNotes);
     } else {
       _minimumRequired = 0;
     }
@@ -135,7 +131,15 @@ class DimensionData {
 // Clase para definir una materia, con sus propias dimensiones
 // Todas las materias juntan hacen el semestre
 class MatterData {
-  MatterData({required this.matterTitle, required this.dimension});
+  MatterData({
+    required this.matterTitle,
+    required this.dimension,
+    double targetNote = 4.0,
+  }) : _targetNote = targetNote {
+    for (int i = 0; i < dimension.length; i++) {
+      dimension[i].targetNote = _targetNote;
+    }
+  }
 
   String matterTitle;
   double _average = 0;
@@ -163,53 +167,47 @@ class MatterData {
   }
 
   void calculate() {
-    double sum = 0;
-    int nonDistributedValue = 0;
-    int nonDistributedCount = 0;
-    double nonUsedPercentajeAdjusted = 0;
-    // int cNotes = 0;
-    // Si no hay dimensiones, no se hace nada
     if (dimension.isEmpty) {
+      _average = 0;
+      _minimumRequired = 0;
       return;
     }
 
     // Primero calcular los promedios de las dimensiones
     for (int i = 0; i < dimension.length; i++) {
+      dimension[i].targetNote = _targetNote;
       dimension[i].calculate();
     }
 
-    // Calcular promedio y requerido considerando todas las dimensiones
-    // que tienen promedios, y sus respectivas ponderaciones
-
-    // Calcular el porcentaje no usado
+    // Calcular el peso de las dimensiones que tienen notas ingresadas (average > 0)
+    int usedWeight = 0;
     for (int i = 0; i < dimension.length; i++) {
-      if (dimension[i].average == 0) {
-        nonDistributedValue += dimension[i].percentageWeight;
-        nonDistributedCount++;
+      if (dimension[i].average > 0) {
+        usedWeight += dimension[i].percentageWeight;
       }
     }
-    // este porcentaje se debe distribuir entre los valores usados
-    // siempre y cuando existan porcentajes usados
-    if (dimension.length - nonDistributedCount != 0) {
-      nonUsedPercentajeAdjusted =
-          nonDistributedValue / (dimension.length - nonDistributedCount);
-    }
 
-    for (int i = 0; i < dimension.length; i++) {
-      if (dimension[i].average != 0) {
-        sum += (dimension[i].average *
-            (dimension[i].percentageWeight + nonUsedPercentajeAdjusted) /
-            100);
-        // cNotes++;
+    // Normalización proporcional del promedio ponderado entre dimensiones activas
+    if (usedWeight > 0) {
+      double sum = 0;
+      for (int i = 0; i < dimension.length; i++) {
+        if (dimension[i].average > 0) {
+          final double relativeWeight = dimension[i].percentageWeight / usedWeight;
+          sum += dimension[i].average * relativeWeight;
+        }
       }
+      _average = sum;
+    } else {
+      _average = 0;
     }
-    _average = sum;
 
-    // Calculo de Requerido
-    if (nonDistributedValue != 0) {
+    // Cálculo de la nota requerida en las dimensiones pendientes
+    final int remainingWeight = 100 - usedWeight;
+    if (remainingWeight > 0) {
+      final double usedFraction = usedWeight / 100.0;
+      final double remainingFraction = remainingWeight / 100.0;
       _minimumRequired =
-          (_targetNote - average * (100 - nonDistributedValue) / 100) /
-              (nonDistributedValue / 100);
+          (_targetNote - (_average * usedFraction)) / remainingFraction;
     } else {
       _minimumRequired = 0;
     }
@@ -239,14 +237,24 @@ class MatterData {
   static MatterData fromMap(Map<String, dynamic> data) {
     List<DimensionData> dimensionList = [];
 
-    for (var d in data['dimension']) {
-          final localDimensionMap = Map<String, dynamic>.from(d as Map);
-          DimensionData localDimension = DimensionData.fromMap(localDimensionMap);
-          dimensionList.add(localDimension);
+    if (data['dimension'] != null) {
+      for (var d in data['dimension']) {
+        final localDimensionMap = Map<String, dynamic>.from(d as Map);
+        DimensionData localDimension = DimensionData.fromMap(localDimensionMap);
+        dimensionList.add(localDimension);
+      }
     }
-    return MatterData(
-      matterTitle: data['matterTitle'],
+
+    final double restoredTargetNote = (data['targetNote'] != null)
+        ? (data['targetNote'] as num).toDouble()
+        : 4.0;
+
+    final matter = MatterData(
+      matterTitle: data['matterTitle'] ?? '',
       dimension: dimensionList,
+      targetNote: restoredTargetNote,
     );
+    matter.calculate();
+    return matter;
   }
 }

@@ -38,6 +38,7 @@ class _DisplayProgramDataState extends State<DisplayProgramData> {
             itemCount: widget.matters.length,
             itemBuilder: (ctx, index) {
               return Matter(
+                key: ValueKey('${widget.matters[index].matterTitle}_$index'),
                 idxMatter: index,
                 matter: widget.matters[index],
                 onRemoveMatterCB: removeMatter,

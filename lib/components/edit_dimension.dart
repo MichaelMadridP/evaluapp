@@ -33,6 +33,21 @@ class _EditDimensionState extends State<EditDimension> {
   }
 
   @override
+  void didUpdateWidget(EditDimension oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.dimension.id != widget.dimension.id ||
+        oldWidget.dimension.dimensionTitle != widget.dimension.dimensionTitle ||
+        oldWidget.dimension.percentageWeight != widget.dimension.percentageWeight ||
+        oldWidget.dimension.numNotes != widget.dimension.numNotes ||
+        oldWidget.dimension.removeWorstNote != widget.dimension.removeWorstNote) {
+      _controllerDim.text = widget.dimension.dimensionTitle;
+      _controllerPercentage.text = widget.dimension.percentageWeight.toString();
+      _noteCountSliderValue = widget.dimension.numNotes.toDouble();
+      _isRemoveChecked = widget.dimension.removeWorstNote;
+    }
+  }
+
+  @override
   void dispose() {
     _controllerDim.dispose();
     _controllerPercentage.dispose();
@@ -46,7 +61,11 @@ class _EditDimensionState extends State<EditDimension> {
     return Card(
       margin: const EdgeInsets.symmetric(
           vertical: 5, horizontal: 15), // margen exterior
-      elevation: 20,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colors.matterCardBorder.withValues(alpha: 0.5)),
+      ),
       color: colors.editDimensionBackground,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -82,45 +101,40 @@ class _EditDimensionState extends State<EditDimension> {
                   'Cant. de Notas',
                   style: TextStyle(color: colors.editDimensionText),
                 ),
-                Slider(
-                  value: _noteCountSliderValue,
-                  max: 21,
-                  min: 1,
-                  divisions: 21,
-                  label: _noteCountSliderValue.round().toString(),
-                  onChanged: (double value) {
-                    setState(() {
-                      _noteCountSliderValue = value;
+                Expanded(
+                  child: Slider(
+                    value: _noteCountSliderValue,
+                    max: 21,
+                    min: 1,
+                    divisions: 20,
+                    activeColor: colors.drawerButton,
+                    inactiveColor: colors.noteFieldBorder,
+                    label: _noteCountSliderValue.round().toString(),
+                    onChanged: (double value) {
+                      setState(() {
+                        _noteCountSliderValue = value;
 
-                      // // Ajustar la cantidad de datos
-                      widget.dimension.numNotes = value.round();
+                        // Ajustar la cantidad de datos
+                        widget.dimension.numNotes = value.round();
 
-                      if (widget.dimension.numNotes >
-                          widget.dimension.noteList.length) {
-                        // si el contador es mas grande que la lista, agregar notas vacias al final
-                        for (int i = widget.dimension.noteList.length;
-                            i < widget.dimension.numNotes;
-                            i++) {
+                        while (widget.dimension.noteList.length <
+                            widget.dimension.numNotes) {
                           widget.dimension.noteList.add(0);
                         }
-                      }
 
-                      if (widget.dimension.numNotes <
-                          widget.dimension.noteList.length) {
-                        // si el contador es mas chico que la lista, elimino notas al final
-                        for (int i = widget.dimension.noteList.length;
-                            widget.dimension.numNotes <
-                                widget.dimension.noteList.length;
-                            i--) {
-                          widget.dimension.noteList.removeAt(i - 1);
+                        while (widget.dimension.noteList.length >
+                            widget.dimension.numNotes) {
+                          widget.dimension.noteList.removeLast();
                         }
-                      }
-                    });
-                  },
+                      });
+                    },
+                  ),
                 ),
                 Text(
                   _noteCountSliderValue.round().toString(),
-                  style: TextStyle(color: colors.editDimensionText),
+                  style: TextStyle(
+                      color: colors.editDimensionText,
+                      fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -141,9 +155,12 @@ class _EditDimensionState extends State<EditDimension> {
                     ],
                     style: TextStyle(color: colors.editDimensionText),
                     decoration: InputDecoration(
+                      isDense: true,
                       suffixText: '%',
                       suffixStyle: TextStyle(color: colors.editDimensionText),
-                      border: const OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onChanged: (value) {
                       // Validar que esté entre 0 y 100
@@ -188,6 +205,7 @@ class _EditDimensionState extends State<EditDimension> {
               children: [
                 Checkbox(
                     value: _isRemoveChecked,
+                    activeColor: colors.drawerButton,
                     onChanged: (bool? value) {
                       setState(() {
                         // Actualizar el Padre con los cambios

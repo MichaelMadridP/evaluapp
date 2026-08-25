@@ -88,21 +88,20 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colors.appBarBackground,
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const AuthScreen()));
-              },
-            ),
-          ],
+        iconTheme: IconThemeData(color: colors.appBarIcon),
+        title: Text(
+          'Recuperar Contraseña',
+          style: TextStyle(color: colors.appBarTitle),
         ),
-        title: const Text('Recuperar Contraseña'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const AuthScreen()));
+          },
+        ),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -115,25 +114,33 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 Text('EvaluApp',
                     style: TextStyle(
                       color: colors.authTitle,
-                      fontSize: 30,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                     )),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 Text('Tu evaluador predictivo de notas',
                     style: TextStyle(
                       color: colors.authSubtitle,
-                      fontSize: 18,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     )),
                 const SizedBox(height: 14),
                 Card(
                   color: colors.authCardBackground,
-                  margin: const EdgeInsets.only(top: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                        color: colors.matterCardBorder.withValues(alpha: 0.4)),
+                  ),
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: SingleChildScrollView(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -141,6 +148,7 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                               style: TextStyle(
                                 color: colors.authSubtitle,
                                 fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               )),
                           const SizedBox(height: 14),
                           Text(
@@ -162,7 +170,14 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                                 hintText: 'Email',
                                 icon: const Icon(Icons.email),
                                 iconColor: colors.authInputIcon,
-                                border: const OutlineInputBorder()),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(
+                                      color: colors.authInputIcon, width: 2),
+                                )),
                             keyboardType: TextInputType.emailAddress,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.none,
@@ -174,32 +189,32 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                             },
                           ),
                           const SizedBox(height: 20),
-                          TextButton(
+                          ElevatedButton(
                             onPressed: () {
                               _sendRecoveryEmail(context);
                             },
-                            style: TextButton.styleFrom(
+                            style: ElevatedButton.styleFrom(
                                 backgroundColor: colors.authButtonBackground,
+                                foregroundColor: colors.authButtonText,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 36, vertical: 12),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(100))),
-                            child: Text('   Enviar Correo   ',
+                                    borderRadius: BorderRadius.circular(24))),
+                            child: const Text('Enviar Correo',
                                 style: TextStyle(
-                                    color: colors.authButtonText,
-                                    fontSize: 14)),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 40),
-                const SizedBox(height: 12),
-                const SizedBox(height: 20),
-                const SizedBox(height: 50),
+                const SizedBox(height: 30),
                 Text('2025 © EvaluApp by Mikemad',
                     style: TextStyle(
                       color: colors.authFooterText,
-                      fontSize: 10,
+                      fontSize: 11,
                     )),
               ],
             ),

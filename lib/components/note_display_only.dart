@@ -10,17 +10,21 @@ class NoteDisplayOnly extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = ThemeProvider.of(context)!.colors;
 
+    final double roundedValue =
+        value == 0 ? 0 : (double.tryParse(value.toStringAsFixed(1)) ?? value);
+
     Color getColorForValue(double v) {
       if (v == 0) {
         return colors.noteGrey;
       }
-      if (v < 4) {
+      if (v < 4.0) {
         return colors.noteRed;
       }
-      if (v >= 7) {
-        return colors.noteYellow;
-      }
       return colors.noteGreen;
+    }
+
+    Color getTextColorForValue(double v) {
+      return colors.noteBadgeTextLight;
     }
 
     return Container(
@@ -28,13 +32,13 @@ class NoteDisplayOnly extends StatelessWidget {
       height: 30,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: getColorForValue(value),
+        color: getColorForValue(roundedValue),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
-        value == 0 ? '-' : value.toStringAsFixed(1),
+        roundedValue == 0 ? '-' : roundedValue.toStringAsFixed(1),
         style: TextStyle(
-          color: colors.noteFieldText,
+          color: getTextColorForValue(roundedValue),
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),

@@ -100,6 +100,10 @@ class _DimensionState extends State<Dimension> {
 
     return Card(
       color: colors.dimensionCardBackground,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      elevation: 0,
       margin: const EdgeInsetsDirectional.all(8),
       child: Padding(
         padding: const EdgeInsets.all(8.0),

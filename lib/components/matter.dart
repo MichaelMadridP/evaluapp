@@ -72,9 +72,10 @@ class _MatterState extends State<Matter> {
         shape: RoundedRectangleBorder(
             side: BorderSide(
               color: colors.matterCardBorder,
+              width: 1,
             ),
-            borderRadius: const BorderRadius.all(Radius.circular(10))),
-        elevation: 40,
+            borderRadius: const BorderRadius.all(Radius.circular(12))),
+        elevation: 3,
         borderOnForeground: true,
         margin: const EdgeInsets.all(10), // Bordes externos
         color: colors.matterCardBackground,
@@ -136,6 +137,7 @@ class _MatterState extends State<Matter> {
               ),
               for (int i = 0; i < widget.matter.dimension.length; i++)
                 Dimension(
+                  key: ValueKey(widget.matter.dimension[i].id),
                   dimension: widget.matter.dimension[i],
                   onChanged: updateMatter,
                 ),
