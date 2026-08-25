@@ -15,6 +15,11 @@ import 'package:flutter/foundation.dart'
 /// );
 /// ```
 class DefaultFirebaseOptions {
+  static bool get isPlatformSupported {
+    if (kIsWeb) return true;
+    return defaultTargetPlatform == TargetPlatform.android;
+  }
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;

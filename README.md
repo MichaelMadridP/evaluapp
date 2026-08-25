@@ -312,7 +312,7 @@ double _targetNote = 4; // Cambia este valor
 
 ## 📄 Licencia
 
-© 2025 EvaluApp by Mikemad
+EvaluApp 2.0.1 - MikeMad 2026
 
 ---
 

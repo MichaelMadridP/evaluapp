@@ -54,6 +54,93 @@ class _EditDimensionState extends State<EditDimension> {
     super.dispose();
   }
 
+  void _applyNoteCount(int newCount) {
+    widget.dimension.numNotes = newCount;
+
+    while (widget.dimension.noteList.length < widget.dimension.numNotes) {
+      widget.dimension.noteList.add(0);
+    }
+
+    while (widget.dimension.noteList.length > widget.dimension.numNotes) {
+      widget.dimension.noteList.removeLast();
+    }
+
+    while (widget.dimension.evaluationDetails.length <
+        widget.dimension.numNotes) {
+      widget.dimension.evaluationDetails.add(EvaluationDetail());
+    }
+
+    while (widget.dimension.evaluationDetails.length >
+        widget.dimension.numNotes) {
+      widget.dimension.evaluationDetails.removeLast();
+    }
+
+    widget.dimension.calculate();
+    widget.onChanged();
+  }
+
+  bool _hasDataInDroppedNotes(int newCount) {
+    for (int i = newCount; i < widget.dimension.noteList.length; i++) {
+      if (widget.dimension.noteList[i] > 0) return true;
+      if (i < widget.dimension.evaluationDetails.length &&
+          widget.dimension.evaluationDetails[i].hasData) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _handleSliderChange(double value) async {
+    final int newCount = value.round();
+    final int currentCount = widget.dimension.numNotes;
+
+    if (newCount < currentCount && _hasDataInDroppedNotes(newCount)) {
+      final colors = ThemeProvider.of(context)!.colors;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: colors.editMatterBackground,
+          title: Text('¿Reducir cantidad de notas?',
+              style: TextStyle(
+                  color: colors.editDimensionText, fontWeight: FontWeight.bold)),
+          content: Text(
+              'Al reducir a $newCount ${newCount == 1 ? "nota" : "notas"}, se descartarán calificaciones y apuntes registrados en las casillas superiores.\n\n¿Deseas continuar?',
+              style: TextStyle(color: colors.editDimensionText)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.errorTextColor,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Descartar y Reducir'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        setState(() {
+          _noteCountSliderValue = value;
+          _applyNoteCount(newCount);
+        });
+      } else {
+        setState(() {
+          _noteCountSliderValue = currentCount.toDouble();
+        });
+      }
+    } else {
+      setState(() {
+        _noteCountSliderValue = value;
+        _applyNoteCount(newCount);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = ThemeProvider.of(context)!.colors;
@@ -111,33 +198,7 @@ class _EditDimensionState extends State<EditDimension> {
                     inactiveColor: colors.noteFieldBorder,
                     label: _noteCountSliderValue.round().toString(),
                     onChanged: (double value) {
-                      setState(() {
-                        _noteCountSliderValue = value;
-
-                        // Ajustar la cantidad de datos
-                        widget.dimension.numNotes = value.round();
-
-                        while (widget.dimension.noteList.length <
-                            widget.dimension.numNotes) {
-                          widget.dimension.noteList.add(0);
-                        }
-
-                        while (widget.dimension.noteList.length >
-                            widget.dimension.numNotes) {
-                          widget.dimension.noteList.removeLast();
-                        }
-
-                        while (widget.dimension.evaluationDetails.length <
-                            widget.dimension.numNotes) {
-                          widget.dimension.evaluationDetails
-                              .add(EvaluationDetail());
-                        }
-
-                        while (widget.dimension.evaluationDetails.length >
-                            widget.dimension.numNotes) {
-                          widget.dimension.evaluationDetails.removeLast();
-                        }
-                      });
+                      _handleSliderChange(value);
                     },
                   ),
                 ),

@@ -800,4 +800,130 @@ void main() {
       expect(find.text('Derivadas'), findsOneWidget);
     });
   });
+
+  group('Session & Multiplatform Unit Tests', () {
+    test('clearSessionData limpia períodos, materias y período activo', () {
+      allPeriodsData.add(PeriodData(name: 'Prueba'));
+      activePeriod = allPeriodsData.first;
+
+      expect(allPeriodsData.isNotEmpty, isTrue);
+      expect(activePeriod, isNotNull);
+
+      clearSessionData();
+
+      expect(allPeriodsData.isEmpty, isTrue);
+      expect(activePeriod, isNull);
+      expect(allMattersData.isEmpty, isTrue);
+    });
+  });
+
+  group('Edge Cases & Validation Tests', () {
+    testWidgets('NoteDisplayOnly maneja metas inalcanzables (>7.0) y metas ya aprobadas (<1.0)',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ThemeProvider(
+          colors: darkColors,
+          isDarkMode: true,
+          toggleTheme: (val) {},
+          child: const MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  NoteDisplayOnly(value: 8.5),
+                  NoteDisplayOnly(value: 0.4),
+                  NoteDisplayOnly(value: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('>7.0'), findsOneWidget);
+      expect(find.text('1.0'), findsOneWidget);
+      expect(find.text('-'), findsOneWidget);
+    });
+
+    testWidgets('Note rechaza valores fuera de rango y despliega feedback SnackBar',
+        (WidgetTester tester) async {
+      double receivedNote = 0;
+      await tester.pumpWidget(
+        ThemeProvider(
+          colors: darkColors,
+          isDarkMode: true,
+          toggleTheme: (val) {},
+          child: MaterialApp(
+            home: Scaffold(
+              body: Note(
+                iValue: 0,
+                label: 'C1',
+                isActive: true,
+                idxNote: 0,
+                onNoteLostFocusCB: (pos, val) {
+                  receivedNote = val;
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Ingresar nota fuera de rango (8.5)
+      await tester.tap(find.byType(TextField));
+      await tester.enterText(find.byType(TextField), '8.5');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(receivedNote, equals(0.0));
+      expect(find.text('Nota fuera de rango. Ingrese una nota entre 1.0 y 7.0'),
+          findsOneWidget);
+    });
+
+    testWidgets('Las casillas Note activas e inactivas mantienen la misma altura', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ThemeProvider(
+          colors: darkColors,
+          isDarkMode: true,
+          toggleTheme: (val) {},
+          child: MaterialApp(
+            home: Scaffold(
+              body: Row(
+                children: [
+                  Expanded(
+                    child: Note(
+                      iValue: 0,
+                      label: '01',
+                      isActive: true,
+                      idxNote: 0,
+                      onNoteLostFocusCB: (pos, val) {},
+                    ),
+                  ),
+                  Expanded(
+                    child: Note(
+                      iValue: 0,
+                      label: '02',
+                      isActive: false,
+                      idxNote: 1,
+                      onNoteLostFocusCB: (pos, val) {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final textFields = find.byType(TextField);
+      expect(textFields, findsNWidgets(2));
+      final activeSize = tester.getSize(textFields.first);
+      final inactiveSize = tester.getSize(textFields.last);
+
+      expect(activeSize.height, equals(inactiveSize.height));
+      expect(activeSize.width, equals(inactiveSize.width));
+    });
+  });
 }

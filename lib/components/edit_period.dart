@@ -175,20 +175,24 @@ class _EditPeriodState extends State<EditPeriod> {
   Widget build(BuildContext context) {
     final colors = ThemeProvider.of(context)!.colors;
     final isAdd = widget.action == ActionType.add;
+    final bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      color: colors.editMatterBackground,
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return SafeArea(
+      top: false,
+      child: Container(
+        color: colors.editMatterBackground,
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: keyboardInset + bottomSafeArea + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Center(
               child: Container(
                 width: 40,
@@ -355,6 +359,6 @@ class _EditPeriodState extends State<EditPeriod> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

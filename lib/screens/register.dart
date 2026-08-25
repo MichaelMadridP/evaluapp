@@ -15,6 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -39,44 +40,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _usernameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Por favor ingresa todos los datos solicitados'),
-        duration: Duration(seconds: 3), // Duración personalizada
+        duration: Duration(seconds: 3),
       ));
       return;
     }
 
-    if (!_isValidEmail(_emailController.text)) {
+    if (!_isValidEmail(_emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Por favor ingresa un email válido'),
-        duration: Duration(seconds: 3), // Duración personalizada
+        duration: Duration(seconds: 3),
       ));
       return;
     }
+
+    setState(() {
+      _isLoading = true;
+    });
 
     // Intentar la conexión
     try {
       final FirebaseAuth auth = FirebaseAuth.instance;
       final UserCredential userCredential =
           await auth.createUserWithEmailAndPassword(
-              email: _emailController.text, password: _passwordController.text);
+              email: _emailController.text.trim(),
+              password: _passwordController.text);
 
       if (userCredential.user?.uid != null) {
         // Conexión exitosa
-        // Actualizar el nombbre del usuario en el registro de autenticación del usuario en Firebase Auth
-        await userCredential.user?.updateDisplayName(_usernameController.text);
+        await userCredential.user
+            ?.updateDisplayName(_usernameController.text.trim());
 
         // Crear el usuario en la base de datos
         await createNewUserOnDatabase(userCredential.user!.uid,
-            _usernameController.text, _emailController.text);
+            _usernameController.text.trim(), _emailController.text.trim());
 
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-              '¡Cuenta de ${_usernameController.text} creada exitosamente!'),
-          duration: const Duration(seconds: 3), // Duración personalizada
+              '¡Cuenta de ${_usernameController.text.trim()} creada exitosamente!'),
+          duration: const Duration(seconds: 2),
         ));
 
-        // Esperar a que el SnackBar desaparezca antes de navegar
-        await Future.delayed(const Duration(seconds: 3));
+        // Esperar brevemente antes de navegar
+        await Future.delayed(const Duration(seconds: 2));
 
         if (!context.mounted) return;
         Navigator.pushReplacement(context,
@@ -97,13 +103,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else {
         msg = 'Error de registro: ${e.message ?? e.code}';
       }
+    } catch (e) {
+      msg = 'Error inesperado: $e';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
 
     if (msg.isNotEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(msg),
-        duration: const Duration(seconds: 3), // Duración personalizada
+        duration: const Duration(seconds: 3),
       ));
       return;
     }
@@ -123,12 +137,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const AuthScreen()));
-          },
+          onPressed: _isLoading
+              ? null
+              : () {
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AuthScreen()));
+                },
         ),
       ),
       body: Container(
@@ -181,6 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _usernameController,
+                            enabled: !_isLoading,
                             style: TextStyle(color: colors.authText),
                             decoration: InputDecoration(
                                 labelStyle:
@@ -210,6 +227,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _emailController,
+                            enabled: !_isLoading,
                             style: TextStyle(color: colors.authText),
                             decoration: InputDecoration(
                                 labelStyle:
@@ -239,6 +257,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _passwordController,
+                            enabled: !_isLoading,
                             style: TextStyle(color: colors.authText),
                             decoration: InputDecoration(
                                 labelStyle:
@@ -267,9 +286,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 20),
                           ElevatedButton(
-                            onPressed: () {
-                              _doRegister(context);
-                            },
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    _doRegister(context);
+                                  },
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: colors.authButtonBackground,
                                 foregroundColor: colors.authButtonText,
@@ -277,10 +298,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     horizontal: 36, vertical: 12),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(24))),
-                            child: const Text('Crear Cuenta',
-                                style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold)),
+                            child: _isLoading
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: colors.authButtonText,
+                                    ),
+                                  )
+                                : const Text('Crear Cuenta',
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -288,7 +318,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                Text('2025 © EvaluApp by Mikemad',
+                Text('EvaluApp 2.0.1 - MikeMad 2026',
                     style: TextStyle(
                       color: colors.authFooterText,
                       fontSize: 11,

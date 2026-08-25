@@ -14,13 +14,34 @@ class NoteDisplayOnly extends StatelessWidget {
         value == 0 ? 0 : (double.tryParse(value.toStringAsFixed(1)) ?? value);
 
     Color getColorForValue(double v) {
-      if (v == 0) {
+      if (v <= 0) {
         return colors.noteGrey;
+      }
+      if (v < 1.0) {
+        // Meta ya alcanzada / requerimiento mínimo
+        return colors.noteGreen;
+      }
+      if (v > 7.0) {
+        // Meta inalcanzable
+        return colors.noteRed;
       }
       if (v < 4.0) {
         return colors.noteRed;
       }
       return colors.noteGreen;
+    }
+
+    String getTextForValue(double v) {
+      if (v <= 0) {
+        return '-';
+      }
+      if (v > 0 && v < 1.0) {
+        return '1.0'; // Con la nota mínima posible en la escala aprueba
+      }
+      if (v > 7.0) {
+        return '>7.0'; // Requerimiento superior al máximo posible
+      }
+      return v.toStringAsFixed(1);
     }
 
     Color getTextColorForValue(double v) {
@@ -36,10 +57,10 @@ class NoteDisplayOnly extends StatelessWidget {
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
-        roundedValue == 0 ? '-' : roundedValue.toStringAsFixed(1),
+        getTextForValue(roundedValue),
         style: TextStyle(
           color: getTextColorForValue(roundedValue),
-          fontSize: 16,
+          fontSize: (roundedValue > 7.0) ? 14 : 16,
           fontWeight: FontWeight.bold,
         ),
       ),

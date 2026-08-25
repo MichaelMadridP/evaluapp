@@ -12,6 +12,7 @@ class ForgottenPassScreen extends StatefulWidget {
 
 class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
   final TextEditingController _emailController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -37,7 +38,7 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
       return;
     }
 
-    if (!_isValidEmail(_emailController.text)) {
+    if (!_isValidEmail(_emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Por favor ingresa un email válido'),
         duration: Duration(seconds: 3),
@@ -45,19 +46,23 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     // Intentar enviar el correo de recuperación
     try {
       final FirebaseAuth auth = FirebaseAuth.instance;
-      await auth.sendPasswordResetEmail(email: _emailController.text);
+      await auth.sendPasswordResetEmail(email: _emailController.text.trim());
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:
-            Text('Correo de recuperación enviado a ${_emailController.text}'),
-        duration: const Duration(seconds: 3),
+        content: Text(
+            'Correo de recuperación enviado a ${_emailController.text.trim()}'),
+        duration: const Duration(seconds: 2),
       ));
 
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 2));
 
       if (!context.mounted) return;
       Navigator.pushReplacement(
@@ -69,6 +74,14 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
         msg = 'El correo no tiene un formato válido.';
       } else {
         msg = 'Error: ${e.message ?? e.code}';
+      }
+    } catch (e) {
+      msg = 'Error inesperado: $e';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
 
@@ -95,12 +108,14 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const AuthScreen()));
-          },
+          onPressed: _isLoading
+              ? null
+              : () {
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AuthScreen()));
+                },
         ),
       ),
       body: Container(
@@ -162,6 +177,7 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                           const SizedBox(height: 20),
                           TextFormField(
                             controller: _emailController,
+                            enabled: !_isLoading,
                             style: TextStyle(color: colors.authText),
                             decoration: InputDecoration(
                                 labelStyle:
@@ -190,9 +206,11 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                           ),
                           const SizedBox(height: 20),
                           ElevatedButton(
-                            onPressed: () {
-                              _sendRecoveryEmail(context);
-                            },
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    _sendRecoveryEmail(context);
+                                  },
                             style: ElevatedButton.styleFrom(
                                 backgroundColor: colors.authButtonBackground,
                                 foregroundColor: colors.authButtonText,
@@ -200,10 +218,19 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                                     horizontal: 36, vertical: 12),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(24))),
-                            child: const Text('Enviar Correo',
-                                style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold)),
+                            child: _isLoading
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: colors.authButtonText,
+                                    ),
+                                  )
+                                : const Text('Enviar Correo',
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -211,7 +238,7 @@ class _ForgottenPassScreenState extends State<ForgottenPassScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                Text('2025 © EvaluApp by Mikemad',
+                Text('EvaluApp 2.0.1 - MikeMad 2026',
                     style: TextStyle(
                       color: colors.authFooterText,
                       fontSize: 11,

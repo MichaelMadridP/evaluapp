@@ -69,14 +69,23 @@ class _PeriodSelectorModalState extends State<PeriodSelectorModal> {
   @override
   Widget build(BuildContext context) {
     final colors = ThemeProvider.of(context)!.colors;
+    final bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      color: colors.editMatterBackground,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return SafeArea(
+      top: false,
+      child: Container(
+        color: colors.editMatterBackground,
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 20,
+          bottom: keyboardInset + bottomSafeArea + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           Center(
             child: Container(
               width: 40,
@@ -223,6 +232,6 @@ class _PeriodSelectorModalState extends State<PeriodSelectorModal> {
           ),
         ],
       ),
-    );
+    ));
   }
 }

@@ -13,13 +13,25 @@ import 'package:evaluapp/screens/study_plan_screen.dart';
 // Google Firebase Authentication
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'firebase_options.dart';
 
 //***************************************************************************************/
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initSharedPreferences();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    if (DefaultFirebaseOptions.isPlatformSupported) {
+      await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform);
+    } else {
+      await Firebase.initializeApp();
+    }
+    // Habilitar persistencia offline en disco para Firebase Realtime Database
+    FirebaseDatabase.instance.setPersistenceEnabled(true);
+  } catch (e) {
+    debugPrint('Nota de inicialización Firebase/Persistencia: $e');
+  }
   runApp(const MyApp());
 }
 
@@ -51,19 +63,6 @@ class _MyAppState extends State<MyApp> {
       _isDarkMode = isDark;
     });
     saveBoolPreference('isDarkMode', isDark);
-  }
-
-  Future<String?> _initAppSession() async {
-    final userId = getStringPreference('userid');
-    if (userId != null && userId.isNotEmpty) {
-      try {
-        await getData(userId, 0);
-      } catch (e) {
-        debugPrint(
-            'Error al recuperar datos de Firebase al iniciar sesión: $e');
-      }
-    }
-    return userId;
   }
 
   @override
@@ -98,10 +97,10 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
         ),
-        home: FutureBuilder<String?>(
-          future: _initAppSession(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, authSnapshot) {
+            if (authSnapshot.connectionState == ConnectionState.waiting) {
               return Scaffold(
                 body: Container(
                   decoration: BoxDecoration(
@@ -120,12 +119,45 @@ class _MyAppState extends State<MyApp> {
                 ),
               );
             }
-            final userId = snapshot.data;
-            if (userId == null || userId.isEmpty) {
+
+            final user = authSnapshot.data;
+            if (user == null) {
+              clearSessionData();
               return const AuthScreen();
-            } else {
-              return const HomeScreen();
             }
+
+            // Sincronizar identificador local y cargar datos
+            saveStringPreference('userid', user.uid);
+            if (user.displayName != null && user.displayName!.isNotEmpty) {
+              saveStringPreference('username', user.displayName!);
+            }
+
+            return FutureBuilder<void>(
+              future: getData(user.uid, 0),
+              builder: (context, dataSnapshot) {
+                if (dataSnapshot.connectionState == ConnectionState.waiting &&
+                    allPeriodsData.isEmpty) {
+                  return Scaffold(
+                    body: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            currentColors.backgroundGradientStart,
+                            currentColors.backgroundGradientEnd,
+                          ],
+                        ),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                  );
+                }
+                return const HomeScreen();
+              },
+            );
           },
         ),
       ),
@@ -141,8 +173,29 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      saveDataImmediate();
+    }
+  }
 
   void _openPeriodSelector(BuildContext context) {
     showModalBottomSheet(
@@ -199,26 +252,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout(BuildContext context) async {
-    // 1. Cerrar sesión en Firebase Auth
+    // 1. Limpiar datos en memoria
+    clearSessionData();
+
+    // 2. Eliminar el usuario de las preferencias locales
+    removePreference('username');
+    removePreference('userid');
+    removePreference('activePeriodId');
+
+    // 3. Cerrar sesión en Firebase Auth (dispara authStateChanges automáticamente)
     try {
       await FirebaseAuth.instance.signOut();
     } catch (e) {
       debugPrint('Error al cerrar sesión en Firebase Auth: $e');
     }
-
-    // 2. Limpiar datos en memoria para evitar filtración entre sesiones
-    allPeriodsData.clear();
-    activePeriod = null;
-
-    // 3. Eliminar el usuario de las preferencias locales
-    removePreference('username');
-    removePreference('userid');
-    removePreference('activePeriodId');
-
-    // 4. Volver a la pantalla de autenticación
-    if (!context.mounted) return;
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => const AuthScreen()));
   }
 
   @override

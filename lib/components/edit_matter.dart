@@ -251,12 +251,14 @@ class _EditMatterState extends State<EditMatter> {
   Widget build(BuildContext context) {
     final colors = ThemeProvider.of(context)!.colors;
 
-    return Container(
-      color: colors.editMatterBackground,
-      padding: const EdgeInsets.all(10),
-      height: double.infinity,
-      width: double.infinity,
-      child: Column(
+    return SafeArea(
+      top: false,
+      child: Container(
+        color: colors.editMatterBackground,
+        padding: const EdgeInsets.all(10),
+        height: double.infinity,
+        width: double.infinity,
+        child: Column(
         children: [
           Text(
             _actionText,
@@ -419,9 +421,12 @@ class _EditMatterState extends State<EditMatter> {
               ),
             ],
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+          SizedBox(
+              height: MediaQuery.of(context).viewPadding.bottom > 0
+                  ? MediaQuery.of(context).viewPadding.bottom + 8
+                  : MediaQuery.of(context).size.height * 0.04),
         ],
       ),
-    );
+    ));
   }
 }

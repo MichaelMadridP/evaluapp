@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/data_model/preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 // Lista global de períodos
@@ -27,6 +28,14 @@ List<MatterData> get allMattersData {
 
 Timer? _saveDebounceTimer;
 
+/// Limpia los datos de sesión en memoria y cancela temporizadores pendientes
+void clearSessionData() {
+  _saveDebounceTimer?.cancel();
+  allPeriodsData.clear();
+  activePeriod = null;
+  _fallbackMatters.clear();
+}
+
 Future<void> createNewUserOnDatabase(
     String userId, String userDisplayName, String userEmail) async {
   String userNodePath = 'users/$userId/user';
@@ -43,10 +52,14 @@ Future<void> createNewUserOnDatabase(
 }
 
 Future<void> _executeSave() async {
-  final userId = getStringPreference('userid');
-
-  if (userId != null && userId.isNotEmpty) {
+  try {
+    String? userId;
     try {
+      userId = FirebaseAuth.instance.currentUser?.uid;
+    } catch (_) {}
+    userId ??= getStringPreference('userid');
+
+    if (userId != null && userId.isNotEmpty) {
       final DatabaseReference rootRef =
           FirebaseDatabase.instance.ref('users/$userId');
 
@@ -65,9 +78,9 @@ Future<void> _executeSave() async {
         // Sincronizar data/matters para retrocompatibilidad
         'data/matters': allMattersData.map((m) => m.toMap()).toList(),
       });
-    } catch (e) {
-      debugPrint('Error al escribir en la base de datos: $e');
     }
+  } catch (e) {
+    debugPrint('Error al escribir en la base de datos: $e');
   }
 }
 
@@ -134,6 +147,12 @@ void deletePeriod(String periodId) {
 
 Future<void> getData(String userId, [int periodID = 0]) async {
   final userRef = FirebaseDatabase.instance.ref('users/$userId');
+
+  try {
+    await userRef.keepSynced(true);
+  } catch (e) {
+    debugPrint('Nota: keepSynced no soportado en esta plataforma o entorno de test: $e');
+  }
 
   allPeriodsData.clear();
   _fallbackMatters.clear();

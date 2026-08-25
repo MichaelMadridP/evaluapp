@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:evaluapp/themes.dart';
-
-import 'package:evaluapp/data_model/model.dart';
-
 import 'package:flutter/gestures.dart';
-
-class _AlwaysWinLongPressRecognizer extends LongPressGestureRecognizer {
-  @override
-  void rejectGesture(int pointer) {
-    acceptGesture(pointer);
-  }
-}
+import 'package:evaluapp/themes.dart';
+import 'package:evaluapp/data_model/model.dart';
 
 class Note extends StatefulWidget {
   const Note({
@@ -102,6 +93,7 @@ class _NoteState extends State<Note> {
     final rawText = _noteTextController.text.trim();
     final cleanValue = rawText.replaceAll(',', '.');
     double value = 0;
+    bool isOutOfRange = false;
 
     if (cleanValue.isNotEmpty) {
       final parsed = double.tryParse(cleanValue);
@@ -110,8 +102,23 @@ class _NoteState extends State<Note> {
           value = parsed;
         } else if (parsed >= 10.0 && parsed <= 70.0) {
           value = parsed / 10.0;
+        } else {
+          isOutOfRange = true;
         }
+      } else {
+        isOutOfRange = true;
       }
+    }
+
+    if (isOutOfRange && mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nota fuera de rango. Ingrese una nota entre 1.0 y 7.0'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
 
     setState(() {
@@ -156,6 +163,7 @@ class _NoteState extends State<Note> {
             child: TextField(
               enableInteractiveSelection: false,
               onChanged: _checkTxtChange,
+              onSubmitted: (_) => _onNoteLostFocus(),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))
               ],
@@ -178,7 +186,7 @@ class _NoteState extends State<Note> {
                 focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide:
-                        BorderSide(color: colors.noteFieldBorder, width: 2)),
+                      BorderSide(color: colors.noteFieldBorder, width: 2)),
                 labelText: widget.label,
                 labelStyle:
                     TextStyle(color: colors.dimensionCardText, fontSize: 11),
@@ -187,24 +195,38 @@ class _NoteState extends State<Note> {
               ),
             ),
           )
-        : Container(
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(
-                  width: 1,
-                  color: colors.noteFieldBorder,
-                  style: BorderStyle.solid),
-              borderRadius: BorderRadius.circular(8),
+        : IgnorePointer(
+            child: TextField(
+              enabled: false,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
+                disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: colors.noteFieldBorder)),
+                labelText: widget.label,
+                labelStyle: const TextStyle(
+                    color: Colors.transparent, fontSize: 11),
+                floatingLabelBehavior: FloatingLabelBehavior.auto,
+                counterText: '',
+              ),
             ),
           );
 
     return RawGestureDetector(
       behavior: HitTestBehavior.opaque,
       gestures: {
-        _AlwaysWinLongPressRecognizer:
-            GestureRecognizerFactoryWithHandlers<_AlwaysWinLongPressRecognizer>(
-          () => _AlwaysWinLongPressRecognizer(),
-          (_AlwaysWinLongPressRecognizer instance) {
+        LongPressGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+          () => LongPressGestureRecognizer(
+            debugOwner: this,
+            duration: const Duration(milliseconds: 400),
+          ),
+          (LongPressGestureRecognizer instance) {
             instance.onLongPress = widget.onLongPress;
           },
         ),
