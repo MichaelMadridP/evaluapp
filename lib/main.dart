@@ -57,7 +57,8 @@ class _MyAppState extends State<MyApp> {
       try {
         await getData(userId, 0);
       } catch (e) {
-        debugPrint('Error al recuperar datos de Firebase al iniciar sesión: $e');
+        debugPrint(
+            'Error al recuperar datos de Firebase al iniciar sesión: $e');
       }
     }
     return userId;
@@ -276,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: const Text("Cerrar la Sesión",
                         style: TextStyle(fontWeight: FontWeight.bold))),
                 const SizedBox(height: 40),
-                Text('EvaluApp 1.0.3 Build 26 - MikeMad 2025',
+                Text('EvaluApp 2.0.1 - MikeMad 2026',
                     style: TextStyle(
                         fontSize: 11,
                         color: colors.drawerText.withValues(alpha: 0.7))),
