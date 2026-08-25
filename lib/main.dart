@@ -6,6 +6,7 @@ import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/themes.dart';
 
 import 'package:evaluapp/components/edit_matter.dart';
+import 'package:evaluapp/components/period_selector_modal.dart';
 import 'package:evaluapp/components/display_program_data.dart';
 import 'package:evaluapp/screens/auth.dart';
 // Google Firebase Authentication
@@ -142,6 +143,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  void _openPeriodSelector(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: true,
+      builder: (ctx) {
+        return PeriodSelectorModal(
+          onPeriodChangedCB: () {
+            setState(() {});
+          },
+        );
+      },
+    );
+  }
+
   void _addNewMatter(BuildContext context) {
     // Crear una nueva materia vacia y editarla
     // Si es válida, se agrega a la lista de materias
@@ -189,11 +206,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // 2. Limpiar datos en memoria para evitar filtración entre sesiones
-    allMattersData.clear();
+    allPeriodsData.clear();
+    activePeriod = null;
 
     // 3. Eliminar el usuario de las preferencias locales
     removePreference('username');
     removePreference('userid');
+    removePreference('activePeriodId');
 
     // 4. Volver a la pantalla de autenticación
     if (!context.mounted) return;
@@ -262,6 +281,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        colors.drawerButton.withValues(alpha: 0.15),
+                    foregroundColor: colors.drawerText,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                          color: colors.drawerButton.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  icon:
+                      Icon(Icons.calendar_month, color: colors.drawerButton),
+                  label: const Text(
+                    "Gestionar Períodos",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _openPeriodSelector(context);
+                  },
+                ),
+                const SizedBox(height: 12),
                 ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.drawerButton,
@@ -299,7 +344,6 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              //saveData(getStringPreference('userid')!, 0, "Default Period", allMattersData);
               _addNewMatter(context);
             },
             icon: const Icon(Icons.add),
@@ -318,7 +362,96 @@ class _HomeScreenState extends State<HomeScreen> {
               colors.backgroundGradientStart,
               colors.backgroundGradientEnd
             ])),
-        child: DisplayProgramData(matters: allMattersData),
+        child: Column(
+          children: [
+            // Barra interactiva del período activo
+            InkWell(
+              onTap: () => _openPeriodSelector(context),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                decoration: BoxDecoration(
+                  color: colors.matterCardBackground,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colors.matterCardBorder,
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      color: colors.drawerButton,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'PERÍODO ACADÉMICO',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                  color: colors.drawerButton,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            activePeriod?.name ?? 'Sin período',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: colors.matterCardTitle,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (activePeriod?.dateRangeFormatted.isNotEmpty ??
+                              false)
+                            Text(
+                              activePeriod!.dateRangeFormatted,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colors.matterCardText
+                                    .withValues(alpha: 0.8),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: colors.matterCardText,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: DisplayProgramData(
+                key: ValueKey(activePeriod?.id ?? 'default_period'),
+                matters: allMattersData,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

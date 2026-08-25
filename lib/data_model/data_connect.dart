@@ -4,8 +4,26 @@ import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/data_model/preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-// Base de los datos del programa
-List<MatterData> allMattersData = [];
+// Lista global de períodos
+List<PeriodData> allPeriodsData = [];
+
+// Período activo actualmente seleccionado
+PeriodData? activePeriod;
+
+// Fallback en caso de que aún no haya período cargado
+final List<MatterData> _fallbackMatters = [];
+
+// Base de las materias del período activo (retrocompatibilidad)
+List<MatterData> get allMattersData {
+  if (activePeriod != null) {
+    return activePeriod!.matters;
+  }
+  if (allPeriodsData.isNotEmpty) {
+    activePeriod = allPeriodsData.first;
+    return activePeriod!.matters;
+  }
+  return _fallbackMatters;
+}
 
 Timer? _saveDebounceTimer;
 
@@ -28,11 +46,25 @@ Future<void> _executeSave() async {
   final userId = getStringPreference('userid');
 
   if (userId != null && userId.isNotEmpty) {
-    final DatabaseReference dbRef =
-        FirebaseDatabase.instance.ref('users/$userId/data/matters');
-    final mattersPayload = allMattersData.map((m) => m.toMap()).toList();
+    final DatabaseReference rootRef =
+        FirebaseDatabase.instance.ref('users/$userId');
+
+    // Construir mapa de períodos con clave periodId
+    final Map<String, dynamic> periodsMap = {};
+    for (var period in allPeriodsData) {
+      periodsMap[period.id] = period.toMap();
+    }
+
+    final currentActiveId = activePeriod?.id ??
+        (allPeriodsData.isNotEmpty ? allPeriodsData.first.id : '');
+
     try {
-      await dbRef.set(mattersPayload);
+      await rootRef.update({
+        'activePeriodId': currentActiveId,
+        'data/periods': periodsMap,
+        // Sincronizar data/matters para retrocompatibilidad
+        'data/matters': allMattersData.map((m) => m.toMap()).toList(),
+      });
     } catch (e) {
       debugPrint('Error al escribir en la base de datos: $e');
     }
@@ -53,35 +85,150 @@ Future<void> saveDataImmediate() async {
   await _executeSave();
 }
 
-Future<void> getData(String userId, int periodID) async {
-  final databaseRef =
-      FirebaseDatabase.instance.ref('users/$userId/data/matters');
+/// Cambia el período activo y persiste la preferencia
+void setActivePeriod(String periodId) {
+  final found = allPeriodsData.firstWhere(
+    (p) => p.id == periodId,
+    orElse: () => allPeriodsData.first,
+  );
+  activePeriod = found;
+  saveStringPreference('activePeriodId', found.id);
+  saveData();
+}
 
-  // Borro la lista de materias anterior en caso de un error de base
-  // para evitar que se queden los datos de otros usuarios
-  allMattersData.clear();
+/// Agrega un nuevo período y lo establece como activo
+void addPeriod(PeriodData newPeriod) {
+  allPeriodsData.insert(0, newPeriod);
+  activePeriod = newPeriod;
+  saveStringPreference('activePeriodId', newPeriod.id);
+  saveData();
+}
 
-  final databaseEvent = await databaseRef.once();
+/// Actualiza un período existente
+void updatePeriod(PeriodData updatedPeriod) {
+  final idx = allPeriodsData.indexWhere((p) => p.id == updatedPeriod.id);
+  if (idx != -1) {
+    allPeriodsData[idx] = updatedPeriod;
+    if (activePeriod?.id == updatedPeriod.id) {
+      activePeriod = updatedPeriod;
+    }
+    saveData();
+  }
+}
 
-  final snapshotValue = databaseEvent.snapshot.value;
+/// Elimina un período y actualiza el período activo si correspondía al eliminado
+void deletePeriod(String periodId) {
+  allPeriodsData.removeWhere((p) => p.id == periodId);
+  if (allPeriodsData.isEmpty) {
+    final defaultPeriod = PeriodData(
+      name: 'Primer Semestre ${DateTime.now().year}',
+    );
+    allPeriodsData.add(defaultPeriod);
+  }
+  if (activePeriod?.id == periodId || activePeriod == null) {
+    activePeriod = allPeriodsData.first;
+  }
+  saveStringPreference('activePeriodId', activePeriod!.id);
+  saveData();
+}
 
-  if (snapshotValue != null) {
-    if (snapshotValue is List) {
-      for (var matterData in snapshotValue) {
-        if (matterData != null) {
-          final matterMap = Map<String, dynamic>.from(matterData as Map);
-          MatterData matter = MatterData.fromMap(matterMap);
-          allMattersData.add(matter);
+Future<void> getData(String userId, [int periodID = 0]) async {
+  final userRef = FirebaseDatabase.instance.ref('users/$userId');
+
+  allPeriodsData.clear();
+  _fallbackMatters.clear();
+
+  final userEvent = await userRef.once();
+  final userSnapshot = userEvent.snapshot.value;
+
+  String? savedActivePeriodId = getStringPreference('activePeriodId');
+
+  if (userSnapshot != null && userSnapshot is Map) {
+    final userMap = Map<String, dynamic>.from(userSnapshot);
+    final activeFromDb = userMap['activePeriodId']?.toString();
+    if (activeFromDb != null && activeFromDb.isNotEmpty) {
+      savedActivePeriodId = activeFromDb;
+    }
+
+    final dataMap = userMap['data'] != null && userMap['data'] is Map
+        ? Map<String, dynamic>.from(userMap['data'] as Map)
+        : null;
+
+    if (dataMap != null) {
+      // 1. Intentar cargar periods
+      final periodsRaw = dataMap['periods'];
+      if (periodsRaw != null) {
+        if (periodsRaw is Map) {
+          for (var entry in periodsRaw.values) {
+            if (entry != null) {
+              final pMap = Map<String, dynamic>.from(entry as Map);
+              allPeriodsData.add(PeriodData.fromMap(pMap));
+            }
+          }
+        } else if (periodsRaw is List) {
+          for (var entry in periodsRaw) {
+            if (entry != null) {
+              final pMap = Map<String, dynamic>.from(entry as Map);
+              allPeriodsData.add(PeriodData.fromMap(pMap));
+            }
+          }
         }
       }
-    } else if (snapshotValue is Map) {
-      for (var entry in snapshotValue.values) {
-        if (entry != null) {
-          final matterMap = Map<String, dynamic>.from(entry as Map);
-          MatterData matter = MatterData.fromMap(matterMap);
-          allMattersData.add(matter);
+
+      // Ordenar períodos por fecha de creación descendente
+      allPeriodsData.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      // 2. Si periods está vacío pero existen materias en data/matters (Migración Legacy)
+      if (allPeriodsData.isEmpty && dataMap['matters'] != null) {
+        List<MatterData> legacyMatters = [];
+        final mattersRaw = dataMap['matters'];
+        if (mattersRaw is List) {
+          for (var m in mattersRaw) {
+            if (m != null) {
+              legacyMatters.add(
+                  MatterData.fromMap(Map<String, dynamic>.from(m as Map)));
+            }
+          }
+        } else if (mattersRaw is Map) {
+          for (var m in mattersRaw.values) {
+            if (m != null) {
+              legacyMatters.add(
+                  MatterData.fromMap(Map<String, dynamic>.from(m as Map)));
+            }
+          }
+        }
+
+        if (legacyMatters.isNotEmpty) {
+          final migratedPeriod = PeriodData(
+            name: 'Periodo Principal',
+            matters: legacyMatters,
+          );
+          allPeriodsData.add(migratedPeriod);
+          // Persistir estructura migrada
+          saveDataImmediate();
         }
       }
     }
   }
+
+  // Si no hay períodos (usuario nuevo o vacío), crear el período inicial por defecto
+  if (allPeriodsData.isEmpty) {
+    final defaultPeriod = PeriodData(
+      name: 'Primer Semestre ${DateTime.now().year}',
+    );
+    allPeriodsData.add(defaultPeriod);
+    saveDataImmediate();
+  }
+
+  // Configurar activePeriod
+  if (savedActivePeriodId != null && savedActivePeriodId.isNotEmpty) {
+    activePeriod = allPeriodsData.firstWhere(
+      (p) => p.id == savedActivePeriodId,
+      orElse: () => allPeriodsData.first,
+    );
+  } else {
+    activePeriod = allPeriodsData.first;
+  }
+
+  saveStringPreference('activePeriodId', activePeriod!.id);
 }

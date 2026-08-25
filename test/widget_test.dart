@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:evaluapp/main.dart';
 import 'package:evaluapp/components/edit_matter.dart';
+import 'package:evaluapp/components/edit_period.dart';
 import 'package:evaluapp/components/note_display_only.dart';
 import 'package:evaluapp/themes.dart';
 import 'package:evaluapp/data_model/model.dart';
+import 'package:evaluapp/data_model/data_connect.dart';
 import 'package:evaluapp/data_model/preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -438,6 +440,194 @@ void main() {
 
       final text35 = tester.widget<Text>(find.text('3.5'));
       expect(text35.style?.color, equals(const Color(0xFFFFFFFF)));
+    });
+  });
+
+  group('PeriodData Unit & State Tests', () {
+    test('Creación, formateo de fechas y cálculo de materias', () {
+      final period = PeriodData(
+        name: 'Primer Semestre 2026',
+        startDate: DateTime(2026, 3, 15),
+        endDate: DateTime(2026, 7, 30),
+        matters: [
+          MatterData(
+            matterTitle: 'Cálculo I',
+            dimension: [
+              DimensionData(
+                dimensionTitle: 'Pruebas',
+                numNotes: 2,
+                noteList: [6.0, 6.0],
+                percentageWeight: 100,
+                removeWorstNote: false,
+                isDismissable: false,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      period.calculate();
+      expect(period.matters.first.average, equals(6.0));
+      expect(period.dateRangeFormatted, equals('15/03/2026 - 30/07/2026'));
+    });
+
+    test('Serialización toMap y fromMap de PeriodData', () {
+      final original = PeriodData(
+        name: 'Trimestre 1',
+        startDate: DateTime(2026, 1, 10),
+        endDate: DateTime(2026, 4, 15),
+        matters: [
+          MatterData(
+            matterTitle: 'Física',
+            dimension: [
+              DimensionData(
+                dimensionTitle: 'Laboratorios',
+                numNotes: 1,
+                noteList: [5.5],
+                percentageWeight: 100,
+                removeWorstNote: false,
+                isDismissable: false,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final map = original.toMap();
+      final restored = PeriodData.fromMap(map);
+
+      expect(restored.id, equals(original.id));
+      expect(restored.name, equals('Trimestre 1'));
+      expect(restored.startDate?.day, equals(10));
+      expect(restored.endDate?.month, equals(4));
+      expect(restored.matters.length, equals(1));
+      expect(restored.matters.first.matterTitle, equals('Física'));
+    });
+
+    test('Manejo de múltiples períodos y aislamiento de materias', () {
+      allPeriodsData.clear();
+      
+      final p1 = PeriodData(name: 'Semestre 1', matters: [
+        MatterData(matterTitle: 'Álgebra', dimension: []),
+      ]);
+      final p2 = PeriodData(name: 'Semestre 2', matters: [
+        MatterData(matterTitle: 'Programación', dimension: []),
+      ]);
+
+      allPeriodsData.add(p1);
+      allPeriodsData.add(p2);
+      activePeriod = p1;
+
+      // Al consultar allMattersData debe devolver las materias de p1
+      expect(allMattersData.length, equals(1));
+      expect(allMattersData.first.matterTitle, equals('Álgebra'));
+
+      // Cambiar a p2
+      setActivePeriod(p2.id);
+      expect(activePeriod?.name, equals('Semestre 2'));
+      expect(allMattersData.first.matterTitle, equals('Programación'));
+
+      // Modificar p1 (renombrar)
+      p1.name = 'Semestre 1 - Modificado';
+      updatePeriod(p1);
+      expect(allPeriodsData.firstWhere((p) => p.id == p1.id).name, equals('Semestre 1 - Modificado'));
+
+      // Eliminar p2 (que estaba activo) -> debe reasignar a p1
+      deletePeriod(p2.id);
+      expect(allPeriodsData.length, equals(1));
+      expect(activePeriod?.id, equals(p1.id));
+    });
+  });
+
+  group('Period UI & Deletion Warning Widget Tests', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({
+        'username': 'Test User',
+        'userid': 'test_uid_123',
+      });
+      await initSharedPreferences();
+
+      allPeriodsData.clear();
+      final testPeriod = PeriodData(
+        name: 'Primer Semestre 2026',
+        startDate: DateTime(2026, 3, 15),
+        endDate: DateTime(2026, 7, 30),
+        matters: [
+          MatterData(matterTitle: 'Química', dimension: []),
+        ],
+      );
+      allPeriodsData.add(testPeriod);
+      activePeriod = testPeriod;
+    });
+
+    testWidgets('HomeScreen muestra barra de período activo y abre PeriodSelectorModal',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ThemeProvider(
+          colors: darkColors,
+          isDarkMode: true,
+          toggleTheme: (val) {},
+          child: const MaterialApp(
+            home: HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Debe mostrar el nombre del período y las fechas
+      expect(find.text('PERÍODO ACADÉMICO'), findsOneWidget);
+      expect(find.text('Primer Semestre 2026'), findsOneWidget);
+      expect(find.text('15/03/2026 - 30/07/2026'), findsOneWidget);
+
+      // Tocar la barra de período para abrir el modal
+      await tester.tap(find.text('Primer Semestre 2026'));
+      await tester.pumpAndSettle();
+
+      // El modal de períodos debe estar visible
+      expect(find.text('Períodos Académicos'), findsOneWidget);
+      expect(find.text('Crear Nuevo Período'), findsOneWidget);
+    });
+
+    testWidgets('Advertencia de pérdida de datos al eliminar un período con materias',
+        (WidgetTester tester) async {
+      final periodWithMatters = PeriodData(
+        name: 'Semestre con Datos',
+        matters: [
+          MatterData(matterTitle: 'Materia 1', dimension: []),
+          MatterData(matterTitle: 'Materia 2', dimension: []),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ThemeProvider(
+          colors: darkColors,
+          isDarkMode: true,
+          toggleTheme: (val) {},
+          child: MaterialApp(
+            home: Scaffold(
+              body: EditPeriod(
+                action: ActionType.edit,
+                period: periodWithMatters,
+                onPeriodUpdateCB: () {},
+                onPeriodDeleteCB: (id) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Presionar botón Eliminar
+      final deleteButton = find.text('Eliminar');
+      expect(deleteButton, findsOneWidget);
+      await tester.tap(deleteButton);
+      await tester.pumpAndSettle();
+
+      // Debe aparecer el diálogo de advertencia explícito
+      expect(find.text('¿Eliminar período en uso?'), findsOneWidget);
+      expect(find.textContaining('Este período contiene 2 materias registradas'), findsOneWidget);
+      expect(find.textContaining('se perderán permanentemente todas las materias'), findsOneWidget);
+      expect(find.text('Eliminar Todo'), findsOneWidget);
     });
   });
 }

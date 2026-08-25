@@ -29,10 +29,38 @@ class _DisplayProgramDataState extends State<DisplayProgramData> {
 
     return (widget.matters.isEmpty)
         ? Center(
-            child: Text(
-                'Al parecer no hay materias creadas aún. \nAgrega algunas con el signo + de arriba',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.primaryTextColor, fontSize: 18)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.auto_stories_outlined,
+                    size: 64,
+                    color: colors.primaryTextColor.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay materias creadas en este período.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.primaryTextColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Agrega tus materias y evaluaciones con el botón + de arriba.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.primaryTextColor.withValues(alpha: 0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           )
         : ListView.builder(
             itemCount: widget.matters.length,

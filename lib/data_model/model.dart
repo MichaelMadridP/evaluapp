@@ -258,3 +258,106 @@ class MatterData {
     return matter;
   }
 }
+
+// Clase para definir un período académico (Semestre, Trimestre, Año, etc.)
+// Un período agrupa materias con sus dimensiones y notas
+class PeriodData {
+  PeriodData({
+    String? id,
+    required this.name,
+    this.startDate,
+    this.endDate,
+    List<MatterData>? matters,
+    DateTime? createdAt,
+  })  : id = id ?? uuid.v4(),
+        matters = matters ?? [],
+        createdAt = createdAt ?? DateTime.now();
+
+  final String id;
+  String name;
+  DateTime? startDate;
+  DateTime? endDate;
+  List<MatterData> matters;
+  final DateTime createdAt;
+
+  void calculate() {
+    for (var matter in matters) {
+      matter.calculate();
+    }
+  }
+
+  // Helper para mostrar el rango de fechas en formato legible (ej: 15/03/2026 - 30/07/2026)
+  String get dateRangeFormatted {
+    if (startDate == null && endDate == null) {
+      return '';
+    }
+    String formatD(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+    if (startDate != null && endDate != null) {
+      return '${formatD(startDate!)} - ${formatD(endDate!)}';
+    } else if (startDate != null) {
+      return 'Desde ${formatD(startDate!)}';
+    } else {
+      return 'Hasta ${formatD(endDate!)}';
+    }
+  }
+
+  // Serialización para Firebase
+  Map<String, dynamic> toMap() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    data['name'] = name;
+    data['startDate'] = startDate?.toIso8601String();
+    data['endDate'] = endDate?.toIso8601String();
+    data['createdAt'] = createdAt.toIso8601String();
+    data['matters'] = matters.map((m) => m.toMap()).toList();
+    return data;
+  }
+
+  // Deserialización desde Firebase
+  static PeriodData fromMap(Map<String, dynamic> data) {
+    List<MatterData> matterList = [];
+
+    if (data['matters'] != null) {
+      if (data['matters'] is List) {
+        for (var m in data['matters']) {
+          if (m != null) {
+            final localMatterMap = Map<String, dynamic>.from(m as Map);
+            matterList.add(MatterData.fromMap(localMatterMap));
+          }
+        }
+      } else if (data['matters'] is Map) {
+        for (var m in (data['matters'] as Map).values) {
+          if (m != null) {
+            final localMatterMap = Map<String, dynamic>.from(m as Map);
+            matterList.add(MatterData.fromMap(localMatterMap));
+          }
+        }
+      }
+    }
+
+    final id = data['id']?.toString() ?? uuid.v4();
+    final name = data['name']?.toString() ?? 'Sin Nombre';
+    final startDate = data['startDate'] != null
+        ? DateTime.tryParse(data['startDate'].toString())
+        : null;
+    final endDate = data['endDate'] != null
+        ? DateTime.tryParse(data['endDate'].toString())
+        : null;
+    final createdAt = data['createdAt'] != null
+        ? DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now()
+        : DateTime.now();
+
+    final period = PeriodData(
+      id: id,
+      name: name,
+      startDate: startDate,
+      endDate: endDate,
+      matters: matterList,
+      createdAt: createdAt,
+    );
+    period.calculate();
+    return period;
+  }
+}
