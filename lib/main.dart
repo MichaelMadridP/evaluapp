@@ -7,6 +7,7 @@ import 'package:evaluapp/themes.dart';
 
 import 'package:evaluapp/components/edit_matter.dart';
 import 'package:evaluapp/components/period_selector_modal.dart';
+import 'package:evaluapp/components/period_report_modal.dart';
 import 'package:evaluapp/components/display_program_data.dart';
 import 'package:evaluapp/screens/auth.dart';
 import 'package:evaluapp/screens/study_plan_screen.dart';
@@ -213,6 +214,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  void _openPeriodReport(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: true,
+      builder: (ctx) {
+        return const PeriodReportModal();
+      },
+    );
+  }
+
   void _addNewMatter(BuildContext context) {
     // Crear una nueva materia vacia y editarla
     // Si es válida, se agrega a la lista de materias
@@ -384,6 +397,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     _openPeriodSelector(context);
                   },
                 ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        colors.drawerButton.withValues(alpha: 0.15),
+                    foregroundColor: colors.drawerText,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                          color: colors.drawerButton.withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  icon:
+                      Icon(Icons.mark_email_read_outlined, color: colors.drawerButton),
+                  label: const Text(
+                    "Reporte del Período",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _openPeriodReport(context);
+                  },
+                ),
                 const SizedBox(height: 12),
                 ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -420,6 +459,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Reporte del Período',
+            onPressed: () {
+              _openPeriodReport(context);
+            },
+            icon: const Icon(Icons.mark_email_read_outlined),
+            color: colors.appBarIcon,
+          ),
           IconButton(
             tooltip: 'Plan de Estudio',
             onPressed: () {

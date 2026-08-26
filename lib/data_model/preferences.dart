@@ -56,3 +56,11 @@ import 'package:shared_preferences/shared_preferences.dart';
   void removePreference(String key) async {
     prefs.remove(key);
   }
+
+  void saveReportRecipients(List<String> recipients) {
+    saveStringListPreference('report_recipients_list', recipients);
+  }
+
+  List<String> getReportRecipients() {
+    return getStringListPreference('report_recipients_list') ?? [];
+  }
