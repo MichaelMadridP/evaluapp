@@ -85,8 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await Future.delayed(const Duration(seconds: 2));
 
         if (!context.mounted) return;
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const AuthScreen()));
+        Navigator.of(context).popUntil((route) => route.isFirst);
       } else {
         msg = 'Error al crear cuenta';
       }

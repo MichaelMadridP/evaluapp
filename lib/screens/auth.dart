@@ -53,12 +53,8 @@ class _AuthScreenState extends State<AuthScreen> {
             'username', userCredential.user!.displayName ?? '');
         saveStringPreference('userid', userCredential.user!.uid);
 
-        // Recuperar los datos de la base de datos
-        await getData(userCredential.user!.uid, 0);
-
         if (!context.mounted) return;
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()));
+        Navigator.of(context).popUntil((route) => route.isFirst);
       } else {
         msg = 'Error al iniciar sesión';
       }

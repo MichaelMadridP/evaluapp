@@ -147,7 +147,7 @@ class _EditDimensionState extends State<EditDimension> {
 
     return Card(
       margin: const EdgeInsets.symmetric(
-          vertical: 5, horizontal: 15), // margen exterior
+          vertical: 6, horizontal: 0), // margen exterior
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),

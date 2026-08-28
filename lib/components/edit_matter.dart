@@ -31,6 +31,7 @@ class EditMatter extends StatefulWidget {
 class _EditMatterState extends State<EditMatter> {
   final _controllerTextTitle = TextEditingController();
   final _controllerTargetNote = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   int _percentageTotal = 0;
   final MatterData _matter = MatterData(matterTitle: '', dimension: [
@@ -54,6 +55,29 @@ class _EditMatterState extends State<EditMatter> {
   void updateDimension() {
     setState(() {
       calculatePercentage();
+    });
+  }
+
+  void _addNewDimension() {
+    setState(() {
+      _matter.dimension.add(DimensionData(
+        dimensionTitle: '',
+        numNotes: 1,
+        noteList: [0],
+        percentageWeight: 50,
+        removeWorstNote: false,
+        isDismissable: false,
+      ));
+      calculatePercentage();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -133,6 +157,7 @@ class _EditMatterState extends State<EditMatter> {
   void dispose() {
     _controllerTextTitle.dispose();
     _controllerTargetNote.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -244,222 +269,256 @@ class _EditMatterState extends State<EditMatter> {
   @override
   Widget build(BuildContext context) {
     final colors = ThemeProvider.of(context)!.colors;
+    final bottomSafeArea = MediaQuery.of(context).viewPadding.bottom;
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     return SafeArea(
       top: false,
       child: Container(
         color: colors.editMatterBackground,
-        padding: const EdgeInsets.all(10),
         height: double.infinity,
         width: double.infinity,
         child: Column(
-        children: [
-          Text(
-            _actionText,
-            style: TextStyle(
-              color: colors.editDimensionText,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  style: TextStyle(color: colors.editDimensionText),
-                  controller: _controllerTextTitle,
-                  keyboardType: TextInputType.name,
-                  textCapitalization: TextCapitalization.words,
-                  maxLength: 50,
-                  decoration: InputDecoration(
-                    labelText: 'Materia',
-                    helperStyle: TextStyle(
-                      color: colors.editDimensionText,
-                      fontSize: 12,
-                    ),
-                    labelStyle: TextStyle(
-                      color: colors.editDimensionText,
-                    ),
-                  ),
+          children: [
+            Expanded(
+              child: ListView(
+                controller: _scrollController,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.only(
+                  left: 14,
+                  right: 14,
+                  top: 14,
+                  bottom: 24,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Column(
                 children: [
-                  Text('Nota Objetivo',
-                      style: TextStyle(
-                          color: colors.editDimensionText,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12)),
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: 60,
-                    child: Note(
-                        iValue: _matter.targetNote,
-                        label: '',
-                        isActive: true,
-                        idxNote: 0,
-                        onNoteLostFocusCB: (idx, value) {
-                          _matter.targetNote = value;
-                        }),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Dimensiones',
-                style: TextStyle(
-                  color: colors.editDimensionText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(
-                    () {
-                      _matter.dimension.add(DimensionData(
-                        dimensionTitle: '',
-                        numNotes: 1,
-                        noteList: [0],
-                        percentageWeight: 50,
-                        removeWorstNote: false,
-                        isDismissable: false,
-                      ));
-                      calculatePercentage();
-                    },
-                  );
-                },
-                icon: Icon(
-                  Icons.add,
-                  color: colors.editDimensionText,
-                ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _matter.dimension.length,
-              itemBuilder: (ctx, index) {
-                return Dismissible(
-                  key: ValueKey(_matter.dimension[index].id),
-                  background: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: colors.errorTextColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.delete,
-                        color: colors.iconDeleteColor,
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.noteFieldBorder,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                  confirmDismiss: (direction) async {
-                    final dim = _matter.dimension[index];
-                    final bool hasData = dim.noteList.any((n) => n > 0) ||
-                        dim.evaluationDetails.any((e) => e.hasData);
-                    if (hasData) {
-                      return await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          backgroundColor: colors.editMatterBackground,
-                          title: Text(
-                            '¿Eliminar dimensión?',
-                            style: TextStyle(
-                              color: colors.editDimensionText,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          content: Text(
-                            'La dimensión "${dim.dimensionTitle.isNotEmpty ? dim.dimensionTitle : 'Dimensión ${index + 1}'}" contiene calificaciones o planes de estudio registrados que se perderán.\n\n¿Deseas eliminarla?',
-                            style: TextStyle(color: colors.editDimensionText),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancelar'),
-                            ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colors.errorTextColor,
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Eliminar'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return true;
-                  },
-                  onDismissed: (direction) {
-                    setState(() {
-                      _matter.dimension.removeAt(index);
-                      calculatePercentage();
-                    });
-                  },
-                  child: EditDimension(
-                    key: ValueKey(_matter.dimension[index].id),
-                    dimension: _matter.dimension[index],
-                    onChanged: updateDimension,
+                  const SizedBox(height: 12),
+                  Text(
+                    _actionText,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.editDimensionText,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                );
-              },
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          style: TextStyle(color: colors.editDimensionText),
+                          controller: _controllerTextTitle,
+                          keyboardType: TextInputType.name,
+                          textCapitalization: TextCapitalization.words,
+                          maxLength: 50,
+                          decoration: InputDecoration(
+                            labelText: 'Materia',
+                            helperStyle: TextStyle(
+                              color: colors.editDimensionText,
+                              fontSize: 12,
+                            ),
+                            labelStyle: TextStyle(
+                              color: colors.editDimensionText,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        children: [
+                          Text('Nota Objetivo',
+                              style: TextStyle(
+                                  color: colors.editDimensionText,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12)),
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            width: 60,
+                            child: Note(
+                                iValue: _matter.targetNote,
+                                label: '',
+                                isActive: true,
+                                idxNote: 0,
+                                onNoteLostFocusCB: (idx, value) {
+                                  _matter.targetNote = value;
+                                }),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Dimensiones',
+                        style: TextStyle(
+                          color: colors.editDimensionText,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _addNewDimension,
+                        icon: Icon(
+                          Icons.add,
+                          color: colors.editDimensionText,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  for (int index = 0;
+                      index < _matter.dimension.length;
+                      index++)
+                    Dismissible(
+                      key: ValueKey(_matter.dimension[index].id),
+                      background: Container(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 5, horizontal: 0),
+                        decoration: BoxDecoration(
+                          color: colors.errorTextColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.delete,
+                            color: colors.iconDeleteColor,
+                          ),
+                        ),
+                      ),
+                      confirmDismiss: (direction) async {
+                        final dim = _matter.dimension[index];
+                        final bool hasData = dim.noteList.any((n) => n > 0) ||
+                            dim.evaluationDetails.any((e) => e.hasData);
+                        if (hasData) {
+                          return await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: colors.editMatterBackground,
+                              title: Text(
+                                '¿Eliminar dimensión?',
+                                style: TextStyle(
+                                  color: colors.editDimensionText,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              content: Text(
+                                'La dimensión "${dim.dimensionTitle.isNotEmpty ? dim.dimensionTitle : 'Dimensión ${index + 1}'}" contiene calificaciones o planes de estudio registrados que se perderán.\n\n¿Deseas eliminarla?',
+                                style: TextStyle(
+                                    color: colors.editDimensionText),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: colors.errorTextColor,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Eliminar'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return true;
+                      },
+                      onDismissed: (direction) {
+                        setState(() {
+                          _matter.dimension.removeAt(index);
+                          calculatePercentage();
+                        });
+                      },
+                      child: EditDimension(
+                        key: ValueKey(_matter.dimension[index].id),
+                        dimension: _matter.dimension[index],
+                        onChanged: updateDimension,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Ponderación Total: $_percentageTotal%',
-            style: TextStyle(
-              color: (_percentageTotal == 100)
-                  ? colors.primaryTextColor
-                  : colors.errorTextColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (widget.action == ActionType.edit)
-                TextButton(
-                  onPressed: onPressDelete,
-                  child: Text('Eliminar Materia',
-                      style: TextStyle(
-                          color: colors.iconDeleteColor,
-                          fontWeight: FontWeight.w600)),
+            Container(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 10,
+                bottom: keyboardInset > 0
+                    ? 8
+                    : (bottomSafeArea > 0 ? bottomSafeArea + 6 : 14),
+              ),
+              decoration: BoxDecoration(
+                color: colors.editMatterBackground,
+                border: Border(
+                  top: BorderSide(
+                    color: colors.matterCardBorder.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
-              if (widget.action == ActionType.edit)
-                const SizedBox(width: 8),
-              FilledButton.tonal(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Cancelar'),
               ),
-              const SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: onPressOk,
-                child: const Text('Ok'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Ponderación Total: $_percentageTotal%',
+                    style: TextStyle(
+                      color: (_percentageTotal == 100)
+                          ? colors.primaryTextColor
+                          : colors.errorTextColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (widget.action == ActionType.edit)
+                        TextButton(
+                          onPressed: onPressDelete,
+                          child: Text('Eliminar Materia',
+                              style: TextStyle(
+                                  color: colors.iconDeleteColor,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      if (widget.action == ActionType.edit)
+                        const SizedBox(width: 8),
+                      FilledButton.tonal(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: onPressOk,
+                        child: const Text('Ok'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-          SizedBox(
-              height: MediaQuery.of(context).viewPadding.bottom > 0
-                  ? MediaQuery.of(context).viewPadding.bottom + 8
-                  : MediaQuery.of(context).size.height * 0.04),
-        ],
+            ),
+          ],
+        ),
       ),
-    ));
+    );
   }
 }

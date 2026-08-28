@@ -27,10 +27,14 @@ List<MatterData> get allMattersData {
 }
 
 Timer? _saveDebounceTimer;
+Future<void>? _activeGetDataFuture;
+String? _activeGetDataUserId;
 
 /// Limpia los datos de sesión en memoria y cancela temporizadores pendientes
 void clearSessionData() {
   _saveDebounceTimer?.cancel();
+  _activeGetDataFuture = null;
+  _activeGetDataUserId = null;
   allPeriodsData.clear();
   activePeriod = null;
   _fallbackMatters.clear();
@@ -111,7 +115,12 @@ void setActivePeriod(String periodId) {
 
 /// Agrega un nuevo período y lo establece como activo
 void addPeriod(PeriodData newPeriod) {
-  allPeriodsData.insert(0, newPeriod);
+  final existingIdx = allPeriodsData.indexWhere((p) => p.id == newPeriod.id);
+  if (existingIdx == -1) {
+    allPeriodsData.insert(0, newPeriod);
+  } else {
+    allPeriodsData[existingIdx] = newPeriod;
+  }
   activePeriod = newPeriod;
   saveStringPreference('activePeriodId', newPeriod.id);
   saveData();
@@ -146,6 +155,22 @@ void deletePeriod(String periodId) {
 }
 
 Future<void> getData(String userId, [int periodID = 0]) async {
+  if (_activeGetDataFuture != null && _activeGetDataUserId == userId) {
+    return _activeGetDataFuture!;
+  }
+
+  _activeGetDataUserId = userId;
+  _activeGetDataFuture = _fetchUserData(userId, periodID);
+
+  try {
+    await _activeGetDataFuture;
+  } finally {
+    _activeGetDataFuture = null;
+    _activeGetDataUserId = null;
+  }
+}
+
+Future<void> _fetchUserData(String userId, [int periodID = 0]) async {
   final userRef = FirebaseDatabase.instance.ref('users/$userId');
 
   try {
@@ -154,13 +179,18 @@ Future<void> getData(String userId, [int periodID = 0]) async {
     debugPrint('Nota: keepSynced no soportado en esta plataforma o entorno de test: $e');
   }
 
-  allPeriodsData.clear();
-  _fallbackMatters.clear();
-
   final userEvent = await userRef.once();
   final userSnapshot = userEvent.snapshot.value;
 
   String? savedActivePeriodId = getStringPreference('activePeriodId');
+  final List<PeriodData> loadedPeriods = [];
+  final Set<String> seenPeriodIds = <String>{};
+
+  void addPeriodUnique(PeriodData period) {
+    if (seenPeriodIds.add(period.id)) {
+      loadedPeriods.add(period);
+    }
+  }
 
   if (userSnapshot != null && userSnapshot is Map) {
     final userMap = Map<String, dynamic>.from(userSnapshot);
@@ -181,24 +211,24 @@ Future<void> getData(String userId, [int periodID = 0]) async {
           for (var entry in periodsRaw.values) {
             if (entry != null) {
               final pMap = Map<String, dynamic>.from(entry as Map);
-              allPeriodsData.add(PeriodData.fromMap(pMap));
+              addPeriodUnique(PeriodData.fromMap(pMap));
             }
           }
         } else if (periodsRaw is List) {
           for (var entry in periodsRaw) {
             if (entry != null) {
               final pMap = Map<String, dynamic>.from(entry as Map);
-              allPeriodsData.add(PeriodData.fromMap(pMap));
+              addPeriodUnique(PeriodData.fromMap(pMap));
             }
           }
         }
       }
 
       // Ordenar períodos por fecha de creación descendente
-      allPeriodsData.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      loadedPeriods.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       // 2. Si periods está vacío pero existen materias en data/matters (Migración Legacy)
-      if (allPeriodsData.isEmpty && dataMap['matters'] != null) {
+      if (loadedPeriods.isEmpty && dataMap['matters'] != null) {
         List<MatterData> legacyMatters = [];
         final mattersRaw = dataMap['matters'];
         if (mattersRaw is List) {
@@ -222,7 +252,9 @@ Future<void> getData(String userId, [int periodID = 0]) async {
             name: 'Periodo Principal',
             matters: legacyMatters,
           );
-          allPeriodsData.add(migratedPeriod);
+          addPeriodUnique(migratedPeriod);
+          allPeriodsData.clear();
+          allPeriodsData.addAll(loadedPeriods);
           // Persistir estructura migrada
           saveDataImmediate();
         }
@@ -231,13 +263,19 @@ Future<void> getData(String userId, [int periodID = 0]) async {
   }
 
   // Si no hay períodos (usuario nuevo o vacío), crear el período inicial por defecto
-  if (allPeriodsData.isEmpty) {
+  if (loadedPeriods.isEmpty) {
     final defaultPeriod = PeriodData(
       name: 'Primer Semestre ${DateTime.now().year}',
     );
-    allPeriodsData.add(defaultPeriod);
+    addPeriodUnique(defaultPeriod);
+    allPeriodsData.clear();
+    allPeriodsData.addAll(loadedPeriods);
     saveDataImmediate();
+  } else {
+    allPeriodsData.clear();
+    allPeriodsData.addAll(loadedPeriods);
   }
+  _fallbackMatters.clear();
 
   // Configurar activePeriod
   if (savedActivePeriodId != null && savedActivePeriodId.isNotEmpty) {

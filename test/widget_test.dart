@@ -539,6 +539,11 @@ void main() {
       deletePeriod(p2.id);
       expect(allPeriodsData.length, equals(1));
       expect(activePeriod?.id, equals(p1.id));
+
+      // Agregar período existente mediante addPeriod no debe duplicarlo
+      addPeriod(p1);
+      expect(allPeriodsData.length, equals(1));
+      expect(allPeriodsData.first.id, equals(p1.id));
     });
   });
 
