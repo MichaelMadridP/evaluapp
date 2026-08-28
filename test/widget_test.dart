@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:evaluapp/main.dart';
 import 'package:evaluapp/components/edit_matter.dart';
+import 'package:evaluapp/components/edit_dimension.dart';
 import 'package:evaluapp/components/edit_period.dart';
 import 'package:evaluapp/components/note.dart';
 import 'package:evaluapp/components/note_display_only.dart';
@@ -924,6 +925,256 @@ void main() {
 
       expect(activeSize.height, equals(inactiveSize.height));
       expect(activeSize.width, equals(inactiveSize.width));
+    });
+  });
+
+  group('Matter & Dimension Note Preservation & Reduction Tests', () {
+    test('Clonado profundo de DimensionData y MatterData preserva evaluationDetails y notas', () {
+      final detail1 = EvaluationDetail(
+        date: DateTime(2026, 9, 10),
+        content: 'Unidad 1 - Límites',
+        confidenceLevel: 5,
+        notes: 'Hacer ejercicios de la guía',
+      );
+      final detail2 = EvaluationDetail(
+        date: DateTime(2026, 10, 5),
+        content: 'Unidad 2 - Derivadas',
+        confidenceLevel: 2,
+        notes: 'Repasar regla de la cadena',
+      );
+
+      final dim = DimensionData(
+        dimensionTitle: 'Pruebas',
+        numNotes: 2,
+        noteList: [6.5, 4.0],
+        percentageWeight: 60,
+        removeWorstNote: false,
+        isDismissable: false,
+        evaluationDetails: [detail1, detail2],
+      );
+
+      final matter = MatterData(
+        matterTitle: 'Cálculo I',
+        dimension: [dim],
+        targetNote: 4.5,
+      );
+
+      final clonedMatter = matter.clone();
+
+      // Verificar que los datos se clonaron correctamente
+      expect(clonedMatter.matterTitle, equals('Cálculo I'));
+      expect(clonedMatter.targetNote, equals(4.5));
+      expect(clonedMatter.dimension.length, equals(1));
+
+      final clonedDim = clonedMatter.dimension.first;
+      expect(clonedDim.id, equals(dim.id));
+      expect(clonedDim.numNotes, equals(2));
+      expect(clonedDim.noteList, equals([6.5, 4.0]));
+      expect(clonedDim.evaluationDetails.length, equals(2));
+      expect(clonedDim.evaluationDetails[0].content, equals('Unidad 1 - Límites'));
+      expect(clonedDim.evaluationDetails[0].confidenceLevel, equals(5));
+      expect(clonedDim.evaluationDetails[1].content, equals('Unidad 2 - Derivadas'));
+      expect(clonedDim.evaluationDetails[1].confidenceLevel, equals(2));
+
+      // Modificar el original para verificar independencia (deep copy)
+      dim.noteList[0] = 7.0;
+      detail1.content = 'Modificado';
+      expect(clonedDim.noteList[0], equals(6.5));
+      expect(clonedDim.evaluationDetails[0].content, equals('Unidad 1 - Límites'));
+    });
+
+    test('Incrementar cantidad de notas añade al final y preserva las primeras notas y planes', () {
+      final dim = DimensionData(
+        dimensionTitle: 'Tareas',
+        numNotes: 3,
+        noteList: [5.0, 6.0, 7.0],
+        percentageWeight: 40,
+        removeWorstNote: false,
+        isDismissable: false,
+        evaluationDetails: [
+          EvaluationDetail(content: 'Tarea 1'),
+          EvaluationDetail(content: 'Tarea 2'),
+          EvaluationDetail(content: 'Tarea 3'),
+        ],
+      );
+
+      // Aumentar de 3 a 5 notas
+      dim.numNotes = 5;
+      dim.syncNotes();
+
+      expect(dim.noteList.length, equals(5));
+      expect(dim.evaluationDetails.length, equals(5));
+
+      // Las 3 primeras deben estar intactas
+      expect(dim.noteList.sublist(0, 3), equals([5.0, 6.0, 7.0]));
+      expect(dim.evaluationDetails[0].content, equals('Tarea 1'));
+      expect(dim.evaluationDetails[1].content, equals('Tarea 2'));
+      expect(dim.evaluationDetails[2].content, equals('Tarea 3'));
+
+      // Las 2 nuevas notas al final deben ser 0.0 y detalles vacíos
+      expect(dim.noteList.sublist(3), equals([0.0, 0.0]));
+      expect(dim.evaluationDetails[3].hasData, isFalse);
+      expect(dim.evaluationDetails[4].hasData, isFalse);
+    });
+
+    test('Reducir cantidad de notas elimina desde la última hacia la primera y conserva las anteriores', () {
+      final dim = DimensionData(
+        dimensionTitle: 'Talleres',
+        numNotes: 4,
+        noteList: [5.5, 6.5, 4.0, 3.5],
+        percentageWeight: 50,
+        removeWorstNote: false,
+        isDismissable: false,
+        evaluationDetails: [
+          EvaluationDetail(content: 'Taller 1'),
+          EvaluationDetail(content: 'Taller 2'),
+          EvaluationDetail(content: 'Taller 3'),
+          EvaluationDetail(content: 'Taller 4'),
+        ],
+      );
+
+      // Reducir de 4 a 2 notas (se eliminan las notas 3 y 4 en índices 2 y 3)
+      dim.numNotes = 2;
+      dim.syncNotes();
+
+      expect(dim.noteList.length, equals(2));
+      expect(dim.evaluationDetails.length, equals(2));
+
+      // Las 2 primeras notas y planes deben permanecer intactos
+      expect(dim.noteList, equals([5.5, 6.5]));
+      expect(dim.evaluationDetails[0].content, equals('Taller 1'));
+      expect(dim.evaluationDetails[1].content, equals('Taller 2'));
+    });
+
+    testWidgets('EditDimension alerta cuando se reducen notas con calificaciones o planes de estudio',
+        (WidgetTester tester) async {
+      final dim = DimensionData(
+        dimensionTitle: 'Exámenes',
+        numNotes: 4,
+        noteList: [6.0, 5.5, 0.0, 4.5], // la nota 4 (índice 3) tiene calificación 4.5
+        percentageWeight: 50,
+        removeWorstNote: false,
+        isDismissable: false,
+        evaluationDetails: [
+          EvaluationDetail(content: 'Examen 1'),
+          EvaluationDetail(content: 'Examen 2'),
+          EvaluationDetail(content: 'Examen 3'),
+          EvaluationDetail(content: 'Examen 4', notes: 'Importante'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ThemeProvider(
+          colors: darkColors,
+          isDarkMode: true,
+          toggleTheme: (val) {},
+          child: MaterialApp(
+            home: Scaffold(
+              body: EditDimension(
+                dimension: dim,
+                onChanged: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Buscar el Slider
+      final sliderFinder = find.byType(Slider);
+      expect(sliderFinder, findsOneWidget);
+
+      // Intentar reducir de 4 a 2 notas arrastrando el Slider
+      final Slider slider = tester.widget(sliderFinder);
+      slider.onChangeEnd?.call(2.0);
+      await tester.pumpAndSettle();
+
+      // Debe aparecer el diálogo de advertencia
+      expect(find.text('¿Reducir cantidad de notas?'), findsOneWidget);
+      expect(find.textContaining('se descartarán las notas 3 a 4 que contienen calificaciones o planes de estudio'), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+      expect(find.text('Descartar y Reducir'), findsOneWidget);
+
+      // Presionar Cancelar
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      // Las 4 notas deben seguir intactas
+      expect(dim.numNotes, equals(4));
+      expect(dim.noteList.length, equals(4));
+      expect(dim.noteList[3], equals(4.5));
+      expect(dim.evaluationDetails[3].content, equals('Examen 4'));
+
+      // Ahora simular confirmación
+      slider.onChangeEnd?.call(2.0);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Descartar y Reducir'));
+      await tester.pumpAndSettle();
+
+      // Ahora se redujo a 2 notas, conservando intactas las notas 1 y 2
+      expect(dim.numNotes, equals(2));
+      expect(dim.noteList.length, equals(2));
+      expect(dim.noteList[0], equals(6.0));
+      expect(dim.noteList[1], equals(5.5));
+      expect(dim.evaluationDetails[0].content, equals('Examen 1'));
+      expect(dim.evaluationDetails[1].content, equals('Examen 2'));
+    });
+
+    testWidgets('EditMatter preserva evaluationDetails al abrir y guardar',
+        (WidgetTester tester) async {
+      final matter = MatterData(
+        matterTitle: 'Química Orgánica',
+        dimension: [
+          DimensionData(
+            dimensionTitle: 'Laboratorios',
+            numNotes: 2,
+            noteList: [6.0, 7.0],
+            percentageWeight: 100,
+            removeWorstNote: false,
+            isDismissable: false,
+            evaluationDetails: [
+              EvaluationDetail(content: 'Lab 1: Destilación', confidenceLevel: 6),
+              EvaluationDetail(content: 'Lab 2: Cromatografía', confidenceLevel: 7),
+            ],
+          ),
+        ],
+      );
+
+      bool updated = false;
+
+      await tester.pumpWidget(
+        ThemeProvider(
+          colors: darkColors,
+          isDarkMode: true,
+          toggleTheme: (val) {},
+          child: MaterialApp(
+            home: Scaffold(
+              body: EditMatter(
+                action: ActionType.edit,
+                matter: matter,
+                idxMatter: 0,
+                onMatterUpdateCB: () {
+                  updated = true;
+                },
+                onMatterDeleteCB: (idx) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Guardar presionando Ok
+      await tester.tap(find.text('Ok'));
+      await tester.pumpAndSettle();
+
+      expect(updated, isTrue);
+      expect(matter.dimension.first.evaluationDetails.length, equals(2));
+      expect(matter.dimension.first.evaluationDetails[0].content, equals('Lab 1: Destilación'));
+      expect(matter.dimension.first.evaluationDetails[0].confidenceLevel, equals(6));
+      expect(matter.dimension.first.evaluationDetails[1].content, equals('Lab 2: Cromatografía'));
+      expect(matter.dimension.first.evaluationDetails[1].confidenceLevel, equals(7));
     });
   });
 }

@@ -318,7 +318,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                Text('EvaluApp 2.0.1 - MikeMad 2026',
+                Text('EvaluApp 2.1.0 - MikeMad 2026',
                     style: TextStyle(
                       color: colors.authFooterText,
                       fontSize: 11,

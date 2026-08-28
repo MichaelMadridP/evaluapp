@@ -17,6 +17,9 @@
 .pub-cache/
 .pub/
 /build/
+**/node_modules/
+/mail-relay/.wrangler/
+/mail-relay/.dev.vars*
 
 # IntelliJ
 .idea/

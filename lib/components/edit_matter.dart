@@ -106,22 +106,16 @@ class _EditMatterState extends State<EditMatter> {
 
   @override
   void initState() {
-    // Si edito una existente, copio los datos de origen,
+    // Si edito una existente, copio los datos de origen preservando notas y planes de estudio,
     // sino, uso la variable temporal como esta
     if (widget.action == ActionType.edit) {
       _matter.matterTitle = widget.matter.matterTitle;
       _matter.targetNote = widget.matter.targetNote;
       _actionText = 'Editar Materia';
-      // Agrego las dimensiones
+      // Agrego las dimensiones clonadas
       _matter.dimension.clear();
       for (int i = 0; i < widget.matter.dimension.length; i++) {
-        _matter.dimension.add(DimensionData(
-            dimensionTitle: widget.matter.dimension[i].dimensionTitle,
-            numNotes: widget.matter.dimension[i].numNotes,
-            noteList: List<double>.from(widget.matter.dimension[i].noteList),
-            percentageWeight: widget.matter.dimension[i].percentageWeight,
-            removeWorstNote: widget.matter.dimension[i].removeWorstNote,
-            isDismissable: widget.matter.dimension[i].isDismissable));
+        _matter.dimension.add(widget.matter.dimension[i].clone());
       }
     } else {
       _actionText = 'Crear Nueva Materia';
@@ -146,11 +140,11 @@ class _EditMatterState extends State<EditMatter> {
     bool inUse = false;
 
     for (int i = 0; i < _matter.dimension.length; i++) {
-      for (int j = 0; j < _matter.dimension[i].noteList.length; j++) {
-        if (_matter.dimension[i].noteList[j] != 0) {
-          inUse = true;
-          break;
-        }
+      final dim = _matter.dimension[i];
+      if (dim.noteList.any((note) => note != 0) ||
+          dim.evaluationDetails.any((detail) => detail.hasData)) {
+        inUse = true;
+        break;
       }
     }
 
@@ -159,7 +153,7 @@ class _EditMatterState extends State<EditMatter> {
         context: context,
         title: 'Materia en uso',
         message:
-            'Esta materia está en uso y al eliminarla se perderán sus notas.',
+            'Esta materia contiene calificaciones o planes de estudio registrados y al eliminarla se perderán estos datos.',
         actions: [
           TextButton(
             onPressed: () {
@@ -240,7 +234,7 @@ class _EditMatterState extends State<EditMatter> {
       widget.matter.targetNote = _matter.targetNote;
       widget.matter.dimension.clear();
       for (int i = 0; i < _matter.dimension.length; i++) {
-        widget.matter.dimension.add(_matter.dimension[i]);
+        widget.matter.dimension.add(_matter.dimension[i].clone());
       }
       widget.onMatterUpdateCB();
       Navigator.pop(context);
@@ -368,6 +362,45 @@ class _EditMatterState extends State<EditMatter> {
                       ),
                     ),
                   ),
+                  confirmDismiss: (direction) async {
+                    final dim = _matter.dimension[index];
+                    final bool hasData = dim.noteList.any((n) => n > 0) ||
+                        dim.evaluationDetails.any((e) => e.hasData);
+                    if (hasData) {
+                      return await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: colors.editMatterBackground,
+                          title: Text(
+                            '¿Eliminar dimensión?',
+                            style: TextStyle(
+                              color: colors.editDimensionText,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          content: Text(
+                            'La dimensión "${dim.dimensionTitle.isNotEmpty ? dim.dimensionTitle : 'Dimensión ${index + 1}'}" contiene calificaciones o planes de estudio registrados que se perderán.\n\n¿Deseas eliminarla?',
+                            style: TextStyle(color: colors.editDimensionText),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancelar'),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colors.errorTextColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Eliminar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return true;
+                  },
                   onDismissed: (direction) {
                     setState(() {
                       _matter.dimension.removeAt(index);

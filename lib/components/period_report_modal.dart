@@ -4,6 +4,7 @@ import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/data_model/data_connect.dart';
 import 'package:evaluapp/data_model/preferences.dart';
 import 'package:evaluapp/services/period_report_service.dart';
+import 'package:evaluapp/services/email_service.dart';
 import 'package:evaluapp/themes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -11,9 +12,11 @@ class PeriodReportModal extends StatefulWidget {
   const PeriodReportModal({
     super.key,
     this.initialPeriod,
+    this.emailSender,
   });
 
   final PeriodData? initialPeriod;
+  final EmailSender? emailSender;
 
   @override
   State<PeriodReportModal> createState() => _PeriodReportModalState();
@@ -22,6 +25,7 @@ class PeriodReportModal extends StatefulWidget {
 class _PeriodReportModalState extends State<PeriodReportModal> {
   final TextEditingController _emailController = TextEditingController();
   final FocusNode _emailFocusNode = FocusNode();
+  EmailSender? _emailSender;
 
   late PeriodData _selectedPeriod;
   final List<String> _recipients = [];
@@ -35,10 +39,18 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
   @override
   void initState() {
     super.initState();
+    _emailSender = widget.emailSender;
     // Determinar período a reportar
-    _selectedPeriod = widget.initialPeriod ?? activePeriod ?? (allPeriodsData.isNotEmpty ? allPeriodsData.first : PeriodData(name: 'Sin período'));
+    _selectedPeriod = widget.initialPeriod ??
+        activePeriod ??
+        (allPeriodsData.isNotEmpty
+            ? allPeriodsData.first
+            : PeriodData(name: 'Sin período'));
     // Cargar lista de destinatarios recordados
-    _recipients.addAll(getReportRecipients());
+    _recipients.addAll(
+      EmailService.normalizeRecipients(getReportRecipients())
+          .take(EmailService.maxRecipients),
+    );
   }
 
   @override
@@ -66,10 +78,25 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
         continue;
       }
 
-      if (!_recipients.contains(clean)) {
-        _recipients.add(clean);
-        addedAny = true;
+      final normalized = clean.toLowerCase();
+      if (_recipients.contains(normalized)) {
+        continue;
       }
+
+      if (_recipients.length >= EmailService.maxRecipients) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Puedes agregar un máximo de 5 destinatarios.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        break;
+      }
+
+      _recipients.add(normalized);
+      addedAny = true;
     }
 
     if (addedAny) {
@@ -101,6 +128,7 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
   }
 
   Future<void> _sendReport() async {
+    if (_isSending) return;
     if (_recipients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -117,6 +145,7 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
       _isSending = true;
     });
 
+    final colors = ThemeProvider.of(context)?.colors ?? darkColors;
     final userName = _getUserName();
     final subject = PeriodReportService.generateSubject(
       period: _selectedPeriod,
@@ -127,7 +156,224 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
       userName: userName,
       includeStudyPlan: _includeStudyPlan,
     );
+    final html = PeriodReportService.generateHtmlReport(
+      period: _selectedPeriod,
+      userName: userName,
+      includeStudyPlan: _includeStudyPlan,
+    );
 
+    EmailSendResult? result;
+    Object? sendError;
+    try {
+      result = await (_emailSender ??= EmailService()).sendReport(
+        recipients: _recipients,
+        subject: subject,
+        html: html,
+        text: body,
+      );
+    } catch (e) {
+      sendError = e;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+
+    if (!mounted) return;
+
+    if (sendError != null) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: colors.matterCardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.matterCardBorder),
+          ),
+          icon: Icon(
+            Icons.error_outline_rounded,
+            color: colors.errorTextColor,
+            size: 48,
+          ),
+          title: Text(
+            'Error al enviar reporte',
+            style: TextStyle(
+              color: colors.primaryTextColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'No se pudo enviar el reporte.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.editDimensionText),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.authButtonBackground,
+                foregroundColor: colors.authButtonText,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text(
+                'Entendido',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final sendResult = result;
+    if (sendResult != null) {
+      if (sendResult.success) {
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: colors.matterCardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colors.matterCardBorder),
+            ),
+            icon: const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF22C55E),
+              size: 48,
+            ),
+            title: Text(
+              '¡Reporte Enviado!',
+              style: TextStyle(
+                color: colors.primaryTextColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Reporte enviado correctamente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.editDimensionText,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Destinatarios:\n${_recipients.join(', ')}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.editDimensionText.withValues(alpha: 0.8),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.authButtonBackground,
+                  foregroundColor: colors.authButtonText,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text(
+                  'Aceptar',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        final errorMessage =
+            sendResult.errorMessage ?? 'No se pudo enviar el reporte.';
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: colors.matterCardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: colors.matterCardBorder),
+            ),
+            icon: Icon(
+              Icons.error_outline_rounded,
+              color: colors.errorTextColor,
+              size: 48,
+            ),
+            title: Text(
+              'Error al enviar reporte',
+              style: TextStyle(
+                color: colors.primaryTextColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              errorMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.editDimensionText),
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.authButtonBackground,
+                  foregroundColor: colors.authButtonText,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
+                ),
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text(
+                  'Entendido',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openMailApp() async {
+    if (_isSending || _recipients.isEmpty) return;
+
+    final userName = _getUserName();
+    final subject = PeriodReportService.generateSubject(
+      period: _selectedPeriod,
+      userName: userName,
+    );
+    final body = PeriodReportService.generatePlainTextReport(
+      period: _selectedPeriod,
+      userName: userName,
+      includeStudyPlan: _includeStudyPlan,
+    );
     final mailtoUri = PeriodReportService.generateMailtoUri(
       recipients: _recipients,
       subject: subject,
@@ -135,40 +381,25 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
     );
 
     try {
-      final canLaunch = await canLaunchUrl(mailtoUri);
-      if (canLaunch) {
+      if (await canLaunchUrl(mailtoUri)) {
         await launchUrl(mailtoUri, mode: LaunchMode.externalApplication);
-      } else {
-        // En caso de que no haya cliente por defecto configurado, copiar al portapapeles
-        await Clipboard.setData(ClipboardData(text: body));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'No se pudo abrir el cliente de correo. Reporte copiado al portapapeles.'),
-              duration: Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+        return;
       }
-    } catch (e) {
-      await Clipboard.setData(ClipboardData(text: body));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Reporte copiado al portapapeles (Nota: $e)'),
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
+    } catch (_) {
+      // El fallback seguro se maneja a continuación.
+    }
+
+    await Clipboard.setData(ClipboardData(text: body));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo abrir el cliente de correo. Reporte copiado al portapapeles.',
           ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSending = false;
-        });
-      }
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -277,7 +508,8 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: colors.editDimensionText.withValues(alpha: 0.8),
+                          color:
+                              colors.editDimensionText.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -293,8 +525,10 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<PeriodData>(
-                            value: allPeriodsData.any((p) => p.id == _selectedPeriod.id)
-                                ? allPeriodsData.firstWhere((p) => p.id == _selectedPeriod.id)
+                            value: allPeriodsData
+                                    .any((p) => p.id == _selectedPeriod.id)
+                                ? allPeriodsData.firstWhere(
+                                    (p) => p.id == _selectedPeriod.id)
                                 : allPeriodsData.first,
                             dropdownColor: colors.editMatterBackground,
                             isExpanded: true,
@@ -357,13 +591,14 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
                                   horizontal: 12, vertical: 12),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(
-                                    color: colors.noteFieldBorder),
+                                borderSide:
+                                    BorderSide(color: colors.noteFieldBorder),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: BorderSide(
-                                    color: colors.drawerButton, width: 1.5),
+                                    color: colors.authButtonBackground,
+                                    width: 1.5),
                               ),
                             ),
                             onSubmitted: _addEmail,
@@ -373,8 +608,8 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
                         IconButton.filled(
                           onPressed: () => _addEmail(_emailController.text),
                           style: IconButton.styleFrom(
-                            backgroundColor: colors.drawerButton,
-                            foregroundColor: colors.drawerText,
+                            backgroundColor: colors.authButtonBackground,
+                            foregroundColor: colors.authButtonText,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -427,8 +662,8 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
                           style: TextStyle(
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
-                            color: colors.editDimensionText
-                                .withValues(alpha: 0.5),
+                            color:
+                                colors.editDimensionText.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -582,32 +817,47 @@ class _PeriodReportModalState extends State<PeriodReportModal> {
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: _isSending ? null : _sendReport,
+                    onPressed:
+                        _isSending || _recipients.isEmpty ? null : _sendReport,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.drawerButton,
-                      foregroundColor: colors.drawerText,
+                      backgroundColor: colors.authButtonBackground,
+                      foregroundColor: colors.authButtonText,
+                      disabledBackgroundColor:
+                          colors.authButtonBackground.withValues(alpha: 0.35),
+                      disabledForegroundColor:
+                          colors.authButtonText.withValues(alpha: 0.6),
                       padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     icon: _isSending
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: colors.authButtonText,
                             ),
                           )
                         : const Icon(Icons.send_rounded, size: 18),
                     label: Text(
-                      _isSending ? 'Abriendo Correo...' : 'Enviar Reporte',
+                      _isSending ? 'Enviando...' : 'Enviar por EvaluApp',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
               ],
+            ),
+            TextButton.icon(
+              onPressed:
+                  _isSending || _recipients.isEmpty ? null : _openMailApp,
+              style: TextButton.styleFrom(
+                foregroundColor: colors.authButtonBackground,
+              ),
+              icon: const Icon(Icons.open_in_new_rounded, size: 16),
+              label: const Text('Abrir aplicación de correo'),
             ),
           ],
         ),

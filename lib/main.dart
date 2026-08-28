@@ -439,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     child: const Text("Cerrar la Sesión",
                         style: TextStyle(fontWeight: FontWeight.bold))),
                 const SizedBox(height: 40),
-                Text('EvaluApp 2.0.1 - MikeMad 2026',
+                Text('EvaluApp 2.1.0 - MikeMad 2026',
                     style: TextStyle(
                         fontSize: 11,
                         color: colors.drawerText.withValues(alpha: 0.7))),

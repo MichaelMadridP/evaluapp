@@ -1,6 +1,16 @@
 import 'package:evaluapp/data_model/model.dart';
 
 class PeriodReportService {
+  /// Escapa texto dinámico antes de insertarlo en una plantilla HTML.
+  static String escapeHtml(String value) {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+  }
+
   /// Retorna el asunto estándar del correo para el reporte del período
   static String generateSubject({
     required PeriodData period,
@@ -59,7 +69,8 @@ class PeriodReportService {
     };
   }
 
-  static String _generateProgressBar(int completed, int total, {int length = 8}) {
+  static String _generateProgressBar(int completed, int total,
+      {int length = 8}) {
     if (total <= 0) return '${'▱' * length} 0%';
     final ratio = (completed / total).clamp(0.0, 1.0);
     final filled = (ratio * length).round();
@@ -120,13 +131,15 @@ class PeriodReportService {
     buffer.writeln(' 📈 RESUMEN GENERAL DEL PERÍODO');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     final double overallAvg = stats['overallAverage'] as double;
-    final avgFormatted = overallAvg > 0 ? overallAvg.toStringAsFixed(1) : 'Sin notas';
+    final avgFormatted =
+        overallAvg > 0 ? overallAvg.toStringAsFixed(1) : 'Sin notas';
     final int totalN = stats['totalNotes'] as int;
     final int compN = stats['completedNotes'] as int;
     final progressGlobalBar = _generateProgressBar(compN, totalN);
 
     buffer.writeln(' • Promedio General Actual:  $avgFormatted');
-    buffer.writeln(' • Progreso Global de Notas: $progressGlobalBar ($compN de $totalN)');
+    buffer.writeln(
+        ' • Progreso Global de Notas: $progressGlobalBar ($compN de $totalN)');
     buffer.writeln(' • Materias Registradas:     ${stats['totalMatters']}');
     buffer.writeln(' • Evaluaciones Rendidas:    $compN de $totalN');
     buffer.writeln(' • Evaluaciones Pendientes:  ${stats['pendingNotes']}');
@@ -167,18 +180,22 @@ class PeriodReportService {
         }
 
         final int matterTotal = matterCompletedNotes + matterPendingNotes;
-        final progressBar = _generateProgressBar(matterCompletedNotes, matterTotal);
+        final progressBar =
+            _generateProgressBar(matterCompletedNotes, matterTotal);
 
         buffer.writeln('');
         buffer.writeln('┌───────────────────────────────────────────────────');
         buffer.writeln('│ 📖 [${i + 1}] ${matter.matterTitle.toUpperCase()}');
         buffer.writeln('│    • Promedio Actual:  $avgStr');
-        buffer.writeln('│    • Nota Objetivo: ${matter.targetNote.toStringAsFixed(1)}');
-        buffer.writeln('│    • Avance de Notas:  $progressBar ($matterCompletedNotes obtenidas / $matterPendingNotes pendientes)');
+        buffer.writeln(
+            '│    • Nota Objetivo: ${matter.targetNote.toStringAsFixed(1)}');
+        buffer.writeln(
+            '│    • Avance de Notas:  $progressBar ($matterCompletedNotes obtenidas / $matterPendingNotes pendientes)');
 
         // Requerimiento para nota objetivo
         if (matter.isFinal()) {
-          buffer.writeln('│    • Estado: ✅ Materia Finalizada (Promedio Final: ${matter.average.toStringAsFixed(1)})');
+          buffer.writeln(
+              '│    • Estado: ✅ Materia Finalizada (Promedio Final: ${matter.average.toStringAsFixed(1)})');
         } else if (matter.minimumRequired > 0) {
           String reqStr;
           if (matter.minimumRequired < 1.0) {
@@ -188,7 +205,8 @@ class PeriodReportService {
           } else {
             reqStr = matter.minimumRequired.toStringAsFixed(1);
           }
-          buffer.writeln('│    • Nota Requerida en Evaluaciones Restantes: $reqStr');
+          buffer.writeln(
+              '│    • Nota Requerida en Evaluaciones Restantes: $reqStr');
         } else {
           buffer.writeln('│    • Nota Requerida: Pendiente de inicio');
         }
@@ -209,12 +227,13 @@ class PeriodReportService {
             }
           }
 
-          final gradesText = obtainedGrades.isNotEmpty
-              ? obtainedGrades.join(', ')
-              : 'Ninguna';
-          final worstNoteText = dim.removeWorstNote ? ' [Elimina peor nota]' : '';
+          final gradesText =
+              obtainedGrades.isNotEmpty ? obtainedGrades.join(', ') : 'Ninguna';
+          final worstNoteText =
+              dim.removeWorstNote ? ' [Elimina peor nota]' : '';
 
-          buffer.writeln('│    • ${dim.dimensionTitle} (${dim.percentageWeight}%)$worstNoteText:');
+          buffer.writeln(
+              '│    • ${dim.dimensionTitle} (${dim.percentageWeight}%)$worstNoteText:');
           buffer.writeln('│      - Notas obtenidas: $gradesText');
           buffer.writeln('│      - Notas faltantes: $dimPendingCount');
         }
@@ -248,13 +267,16 @@ class PeriodReportService {
               final confBadge = _confidenceBadge(detail.confidenceLevel);
 
               buffer.writeln('│    📌 $dimName (Nota #$nIdx):');
-              buffer.writeln('│       • Fecha prevista:     ${detail.dateFormatted}');
+              buffer.writeln(
+                  '│       • Fecha prevista:     ${detail.dateFormatted}');
               buffer.writeln('│       • Nivel de confianza: $confBadge');
               if (detail.content.trim().isNotEmpty) {
-                buffer.writeln('│       • Temario/Contenido:  ${detail.content.trim()}');
+                buffer.writeln(
+                    '│       • Temario/Contenido:  ${detail.content.trim()}');
               }
               if (detail.notes.trim().isNotEmpty) {
-                buffer.writeln('│       • Apuntes/Estrategia: ${detail.notes.trim()}');
+                buffer.writeln(
+                    '│       • Apuntes/Estrategia: ${detail.notes.trim()}');
               }
             }
           }
@@ -287,6 +309,9 @@ class PeriodReportService {
     final double overallAvg = stats['overallAverage'] as double;
     final String avgFormatted =
         overallAvg > 0 ? overallAvg.toStringAsFixed(1) : '-';
+    final escapedPeriodName = escapeHtml(period.name);
+    final escapedDateRange = escapeHtml(period.dateRangeFormatted);
+    final escapedUserName = escapeHtml(userName);
 
     final buffer = StringBuffer();
 
@@ -313,8 +338,8 @@ class PeriodReportService {
                   <td align="center">
                     <span style="display: inline-block; background-color: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; letter-spacing: 1px; color: #ffffff; text-transform: uppercase;">Informe Académico</span>
                     <h1 style="margin: 8px 0 4px 0; color: #ffffff; font-size: 24px; font-weight: 800;">EvaluApp</h1>
-                    <p style="margin: 0; color: #e9d5ff; font-size: 14px;">${period.name}</p>
-                    ${period.dateRangeFormatted.isNotEmpty ? '<p style="margin: 4px 0 0 0; color: #c4b5fd; font-size: 12px;">${period.dateRangeFormatted}</p>' : ''}
+                    <p style="margin: 0; color: #e9d5ff; font-size: 14px;">$escapedPeriodName</p>
+                    ${period.dateRangeFormatted.isNotEmpty ? '<p style="margin: 4px 0 0 0; color: #c4b5fd; font-size: 12px;">$escapedDateRange</p>' : ''}
                   </td>
                 </tr>
               </table>
@@ -327,7 +352,7 @@ class PeriodReportService {
               <table width="100%" border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="color: #cbd5e1; font-size: 13px;">
-                    👤 <strong>Estudiante:</strong> <span style="color: #ffffff;">$userName</span>
+                    👤 <strong>Estudiante:</strong> <span style="color: #ffffff;">$escapedUserName</span>
                   </td>
                   <td align="right" style="color: #94a3b8; font-size: 12px;">
                     📅 $dateStr
@@ -378,10 +403,12 @@ class PeriodReportService {
     } else {
       for (var matter in period.matters) {
         matter.calculate();
+        final escapedMatterTitle = escapeHtml(matter.matterTitle);
 
         final double avg = matter.average;
         final String avgText = avg > 0 ? avg.toStringAsFixed(1) : '-';
-        final String avgColor = avg >= 4.0 ? '#4ade80' : (avg > 0 ? '#f87171' : '#94a3b8');
+        final String avgColor =
+            avg >= 4.0 ? '#4ade80' : (avg > 0 ? '#f87171' : '#94a3b8');
 
         int matterPending = 0;
         int matterCompleted = 0;
@@ -422,7 +449,7 @@ class PeriodReportService {
                 <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
                   <tr>
                     <td>
-                      <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #ffffff;">${matter.matterTitle}</h3>
+                      <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #ffffff;">$escapedMatterTitle</h3>
                       <span style="font-size: 11px; color: #a78bfa;">Meta Objetivo: <strong>${matter.targetNote.toStringAsFixed(1)}</strong></span>
                     </td>
                     <td align="right">
@@ -450,6 +477,7 @@ class PeriodReportService {
 ''');
 
         for (var dim in matter.dimension) {
+          final escapedDimensionTitle = escapeHtml(dim.dimensionTitle);
           final List<String> grades = [];
           int dimPending = 0;
           for (int n = 0; n < dim.numNotes; n++) {
@@ -464,7 +492,9 @@ class PeriodReportService {
           final gradesBadges = grades.isNotEmpty
               ? grades.map((g) {
                   final double numG = double.tryParse(g) ?? 0;
-                  final badgeBg = numG >= 4.0 ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)';
+                  final badgeBg = numG >= 4.0
+                      ? 'rgba(74, 222, 128, 0.15)'
+                      : 'rgba(248, 113, 113, 0.15)';
                   final badgeColor = numG >= 4.0 ? '#4ade80' : '#f87171';
                   return '<span style="display: inline-block; background-color: $badgeBg; color: $badgeColor; font-weight: bold; border-radius: 6px; padding: 2px 6px; margin: 1px 3px; font-size: 11px;">$g</span>';
                 }).join('')
@@ -477,7 +507,7 @@ class PeriodReportService {
           buffer.write('''
                   <tr>
                     <td style="padding: 6px 0; border-bottom: 1px dashed #372952;">
-                      <strong>${dim.dimensionTitle}</strong> <span style="color: #a78bfa; font-size: 11px;">(${dim.percentageWeight}%)</span>:
+                      <strong>$escapedDimensionTitle</strong> <span style="color: #a78bfa; font-size: 11px;">(${dim.percentageWeight}%)</span>:
                     </td>
                     <td align="right" style="padding: 6px 0; border-bottom: 1px dashed #372952;">
                       $gradesBadges $pendingBadge
@@ -522,6 +552,11 @@ class PeriodReportService {
               final String dimName = p['dimension'];
               final int nIdx = p['noteIndex'];
               final EvaluationDetail detail = p['detail'];
+              final escapedDimName = escapeHtml(dimName);
+              final escapedDate = escapeHtml(detail.dateFormatted);
+              final escapedConfidence = escapeHtml(detail.confidenceLabel);
+              final escapedContent = escapeHtml(detail.content.trim());
+              final escapedNotes = escapeHtml(detail.notes.trim());
 
               String confColor;
               if (detail.confidenceLevel <= 2) {
@@ -537,21 +572,21 @@ class PeriodReportService {
                     <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 12px;">
                       <tr>
                         <td>
-                          <strong style="color: #ffffff;">$dimName (Nota #$nIdx)</strong>
+                          <strong style="color: #ffffff;">$escapedDimName (Nota #$nIdx)</strong>
                         </td>
                         <td align="right" style="color: #94a3b8; font-size: 11px;">
-                          🗓️ ${detail.dateFormatted}
+                          🗓️ $escapedDate
                         </td>
                       </tr>
                       <tr>
                         <td colspan="2" style="padding-top: 4px;">
                           <span style="display: inline-block; background-color: rgba(255,255,255,0.08); color: $confColor; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: bold;">
-                            Confianza: ${detail.confidenceLabel}
+                            Confianza: $escapedConfidence
                           </span>
                         </td>
                       </tr>
-                      ${detail.content.trim().isNotEmpty ? '<tr><td colspan="2" style="padding-top: 6px; color: #e2e8f0; font-size: 11px;">📖 <strong>Temas:</strong> ${detail.content.trim()}</td></tr>' : ''}
-                      ${detail.notes.trim().isNotEmpty ? '<tr><td colspan="2" style="padding-top: 4px; color: #cbd5e1; font-size: 11px; font-style: italic;">📝 <strong>Apuntes:</strong> ${detail.notes.trim()}</td></tr>' : ''}
+                      ${detail.content.trim().isNotEmpty ? '<tr><td colspan="2" style="padding-top: 6px; color: #e2e8f0; font-size: 11px;">📖 <strong>Temas:</strong> $escapedContent</td></tr>' : ''}
+                      ${detail.notes.trim().isNotEmpty ? '<tr><td colspan="2" style="padding-top: 4px; color: #cbd5e1; font-size: 11px; font-style: italic;">📝 <strong>Apuntes:</strong> $escapedNotes</td></tr>' : ''}
                     </table>
                   </div>
 ''');

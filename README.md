@@ -197,6 +197,33 @@ flutter pub run flutter_launcher_icons:main
 flutter run
 ```
 
+### Envío directo de reportes por email
+
+El envío seguro usa el Cloudflare Worker ubicado en `mail-relay/`. La URL
+pública del Worker se entrega al compilar; no es un secreto:
+
+```bash
+flutter run --dart-define=EVALUAPP_MAIL_RELAY_URL=https://evaluapp-mail-relay.michael-madrid-p.workers.dev
+```
+
+Para generar el Android App Bundle:
+
+```bash
+flutter build appbundle --dart-define=EVALUAPP_MAIL_RELAY_URL=https://evaluapp-mail-relay.michael-madrid-p.workers.dev
+```
+
+La URL productiva anterior también es el valor predeterminado centralizado. El
+`--dart-define` permite reemplazarla para otros entornos y evita depender de la
+configuración del IDE. `EVALUAPP_MAIL_RELAY_URL` debe ser una URL HTTPS base;
+EvaluApp normaliza `/send` sin duplicarlo, obtiene el
+Firebase ID Token del usuario autenticado y llama a `/send`. La API key de
+Resend nunca debe proporcionarse mediante `--dart-define`; se configura
+únicamente como secret del Worker. Si el relay no está configurado, la opción
+secundaria **Abrir aplicación de correo** conserva el flujo `mailto:`.
+
+Consulta [mail-relay/README.md](mail-relay/README.md) para crear KV, configurar
+Firebase/Resend, ejecutar tests y desplegar el Worker.
+
 ---
 
 ## 📱 Uso de la Aplicación
@@ -312,7 +339,7 @@ double _targetNote = 4; // Cambia este valor
 
 ## 📄 Licencia
 
-EvaluApp 2.0.1 - MikeMad 2026
+EvaluApp 2.1.0 - MikeMad 2026
 
 ---
 

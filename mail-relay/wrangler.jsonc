@@ -1,0 +1,18 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "evaluapp-mail-relay",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-08-26",
+	"vars": {
+		"FIREBASE_PROJECT_ID": "evaluapp-a4055",
+		"RESEND_FROM_EMAIL": "reports@mail.evaluappmobile.cl",
+		"RESEND_FROM_NAME": "EvaluApp"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "RATE_LIMIT",
+			"id": "8f53cf18fba748cabb7e8cb8f32c70a5",
+			"remote": true
+		}
+	]
+}

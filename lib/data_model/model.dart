@@ -55,6 +55,15 @@ class EvaluationDetail {
     }
   }
 
+  EvaluationDetail clone() {
+    return EvaluationDetail(
+      date: date,
+      content: content,
+      confidenceLevel: confidenceLevel,
+      notes: notes,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'date': date?.toIso8601String(),
@@ -102,6 +111,7 @@ class StudyEvaluationItem {
 // porcentaje de ponderación, todas juntas suman 100%
 class DimensionData {
   DimensionData({
+    String? id,
     required this.dimensionTitle,
     required this.numNotes,
     required this.noteList,
@@ -109,9 +119,9 @@ class DimensionData {
     required this.removeWorstNote,
     required this.isDismissable,
     List<EvaluationDetail>? evaluationDetails,
-  })  : id = uuid.v4(),
+  })  : id = id ?? uuid.v4(),
         evaluationDetails = evaluationDetails ?? [] {
-    _syncEvaluationDetails();
+    syncNotes();
   }
 
   final String id;
@@ -126,13 +136,32 @@ class DimensionData {
   double _minimumRequired = 0;
   double targetNote = 4;
 
-  void _syncEvaluationDetails() {
+  void syncNotes() {
+    while (noteList.length < numNotes) {
+      noteList.add(0.0);
+    }
+    while (noteList.length > numNotes) {
+      noteList.removeLast();
+    }
     while (evaluationDetails.length < numNotes) {
       evaluationDetails.add(EvaluationDetail());
     }
     while (evaluationDetails.length > numNotes) {
       evaluationDetails.removeLast();
     }
+  }
+
+  DimensionData clone() {
+    return DimensionData(
+      id: id,
+      dimensionTitle: dimensionTitle,
+      numNotes: numNotes,
+      noteList: List<double>.from(noteList),
+      percentageWeight: percentageWeight,
+      removeWorstNote: removeWorstNote,
+      isDismissable: isDismissable,
+      evaluationDetails: evaluationDetails.map((e) => e.clone()).toList(),
+    );
   }
 
   double get average {
@@ -144,7 +173,7 @@ class DimensionData {
   }
 
   void calculate() {
-    _syncEvaluationDetails();
+    syncNotes();
 
     // Calcular el promedio y el requerido
     double sum = 0;
@@ -198,8 +227,9 @@ class DimensionData {
 
   // Serializacion para base de datos
   Map<String, dynamic> toMap() {
-    _syncEvaluationDetails();
+    syncNotes();
     final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
     data['dimensionTitle'] = dimensionTitle;
     data['numNotes'] = numNotes;
     data['noteList'] = noteList;
@@ -214,15 +244,18 @@ class DimensionData {
   // DesSerializacion desde la base de datos
   factory DimensionData.fromMap(Map<String, dynamic> data) {
     List<double> noteList = [];
-    for (var n in data['noteList']) {
-      noteList.add(n.toDouble());
+    if (data['noteList'] != null) {
+      for (var n in data['noteList']) {
+        noteList.add(n.toDouble());
+      }
     }
 
-    final dimensionTitle = data['dimensionTitle'];
-    final numNotes = data['numNotes'];
-    final percentageWeight = data['percentageWeight'];
-    final removeWorstNote = data['removeWorstNote'];
-    final isDismissable = data['isDismissable'];
+    final id = data['id']?.toString();
+    final dimensionTitle = data['dimensionTitle'] ?? '';
+    final numNotes = data['numNotes'] ?? 1;
+    final percentageWeight = data['percentageWeight'] ?? 100;
+    final removeWorstNote = data['removeWorstNote'] ?? false;
+    final isDismissable = data['isDismissable'] ?? false;
 
     List<EvaluationDetail> evaluationDetails = [];
     if (data['evaluationDetails'] != null) {
@@ -244,6 +277,7 @@ class DimensionData {
     }
 
     return DimensionData(
+      id: id,
       dimensionTitle: dimensionTitle,
       numNotes: numNotes,
       noteList: noteList,
@@ -347,6 +381,16 @@ class MatterData {
       }
     } 
     return true;
+  }
+
+  MatterData clone() {
+    final matter = MatterData(
+      matterTitle: matterTitle,
+      dimension: dimension.map((d) => d.clone()).toList(),
+      targetNote: targetNote,
+    );
+    matter.calculate();
+    return matter;
   }
 
   // Serializacion para base de datos

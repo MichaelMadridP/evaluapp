@@ -56,25 +56,7 @@ class _EditDimensionState extends State<EditDimension> {
 
   void _applyNoteCount(int newCount) {
     widget.dimension.numNotes = newCount;
-
-    while (widget.dimension.noteList.length < widget.dimension.numNotes) {
-      widget.dimension.noteList.add(0);
-    }
-
-    while (widget.dimension.noteList.length > widget.dimension.numNotes) {
-      widget.dimension.noteList.removeLast();
-    }
-
-    while (widget.dimension.evaluationDetails.length <
-        widget.dimension.numNotes) {
-      widget.dimension.evaluationDetails.add(EvaluationDetail());
-    }
-
-    while (widget.dimension.evaluationDetails.length >
-        widget.dimension.numNotes) {
-      widget.dimension.evaluationDetails.removeLast();
-    }
-
+    widget.dimension.syncNotes();
     widget.dimension.calculate();
     widget.onChanged();
   }
@@ -82,30 +64,48 @@ class _EditDimensionState extends State<EditDimension> {
   bool _hasDataInDroppedNotes(int newCount) {
     for (int i = newCount; i < widget.dimension.noteList.length; i++) {
       if (widget.dimension.noteList[i] > 0) return true;
-      if (i < widget.dimension.evaluationDetails.length &&
-          widget.dimension.evaluationDetails[i].hasData) {
-        return true;
-      }
+    }
+    for (int i = newCount; i < widget.dimension.evaluationDetails.length; i++) {
+      if (widget.dimension.evaluationDetails[i].hasData) return true;
     }
     return false;
   }
 
-  Future<void> _handleSliderChange(double value) async {
+  Future<void> _handleSliderChangeEnd(double value) async {
     final int newCount = value.round();
     final int currentCount = widget.dimension.numNotes;
 
+    if (newCount == currentCount) {
+      setState(() {
+        _noteCountSliderValue = currentCount.toDouble();
+      });
+      return;
+    }
+
     if (newCount < currentCount && _hasDataInDroppedNotes(newCount)) {
       final colors = ThemeProvider.of(context)!.colors;
+      final int droppedCount = currentCount - newCount;
+      final startNoteNum = newCount + 1;
+      final endNoteNum = currentCount;
+      final rangeText = droppedCount == 1
+          ? 'la nota $startNoteNum'
+          : 'las notas $startNoteNum a $endNoteNum';
+
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: colors.editMatterBackground,
-          title: Text('¿Reducir cantidad de notas?',
-              style: TextStyle(
-                  color: colors.editDimensionText, fontWeight: FontWeight.bold)),
+          title: Text(
+            '¿Reducir cantidad de notas?',
+            style: TextStyle(
+              color: colors.editDimensionText,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Text(
-              'Al reducir a $newCount ${newCount == 1 ? "nota" : "notas"}, se descartarán calificaciones y apuntes registrados en las casillas superiores.\n\n¿Deseas continuar?',
-              style: TextStyle(color: colors.editDimensionText)),
+            'Al reducir de $currentCount a $newCount ${newCount == 1 ? "nota" : "notas"}, se descartarán $rangeText que contienen calificaciones o planes de estudio registrados.\n\n¿Deseas continuar y descartar estos datos?',
+            style: TextStyle(color: colors.editDimensionText),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -125,7 +125,7 @@ class _EditDimensionState extends State<EditDimension> {
 
       if (confirmed == true) {
         setState(() {
-          _noteCountSliderValue = value;
+          _noteCountSliderValue = newCount.toDouble();
           _applyNoteCount(newCount);
         });
       } else {
@@ -135,7 +135,7 @@ class _EditDimensionState extends State<EditDimension> {
       }
     } else {
       setState(() {
-        _noteCountSliderValue = value;
+        _noteCountSliderValue = newCount.toDouble();
         _applyNoteCount(newCount);
       });
     }
@@ -198,7 +198,12 @@ class _EditDimensionState extends State<EditDimension> {
                     inactiveColor: colors.noteFieldBorder,
                     label: _noteCountSliderValue.round().toString(),
                     onChanged: (double value) {
-                      _handleSliderChange(value);
+                      setState(() {
+                        _noteCountSliderValue = value;
+                      });
+                    },
+                    onChangeEnd: (double value) {
+                      _handleSliderChangeEnd(value);
                     },
                   ),
                 ),
