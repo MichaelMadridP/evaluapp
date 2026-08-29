@@ -59,6 +59,14 @@ class _DimensionState extends State<Dimension> {
               ? widget.dimension.noteList[index]
               : 0.0,
           detail: widget.dimension.evaluationDetails[index],
+          previousDate: index > 0
+              ? widget.dimension.evaluationDetails[index - 1].date
+              : null,
+          nextDate: index + 1 < widget.dimension.evaluationDetails.length
+              ? widget.dimension.evaluationDetails[index + 1].date
+              : null,
+          periodStartDate: activePeriod?.startDate,
+          periodEndDate: activePeriod?.endDate,
           onSaveCB: () {
             setState(() {});
             saveData();

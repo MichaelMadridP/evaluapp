@@ -6,7 +6,7 @@ import 'package:evaluapp/themes.dart';
 
 enum StudyPlanSortOrder {
   confidence, // Menor nivel de confianza primero (urgencia de estudio)
-  date,       // Próximas fechas primero (cronológico)
+  date, // Próximas fechas primero (cronológico)
 }
 
 class StudyPlanScreen extends StatefulWidget {
@@ -53,6 +53,14 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
           noteIndex: item.noteIndex,
           grade: item.grade,
           detail: item.detail,
+          previousDate: item.noteIndex > 0
+              ? item.dimension.evaluationDetails[item.noteIndex - 1].date
+              : null,
+          nextDate: item.noteIndex + 1 < item.dimension.evaluationDetails.length
+              ? item.dimension.evaluationDetails[item.noteIndex + 1].date
+              : null,
+          periodStartDate: activePeriod?.startDate,
+          periodEndDate: activePeriod?.endDate,
           onSaveCB: () {
             setState(() {});
             saveData();
@@ -73,7 +81,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
     // Ordenar
     if (_sortOrder == StudyPlanSortOrder.confidence) {
       list.sort((a, b) {
-        final cmp = a.detail.confidenceLevel.compareTo(b.detail.confidenceLevel);
+        final cmp =
+            a.detail.confidenceLevel.compareTo(b.detail.confidenceLevel);
         if (cmp != 0) return cmp;
         // Si empatan en confianza, ordenar por fecha más próxima
         if (a.detail.date != null && b.detail.date != null) {
@@ -109,7 +118,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
     final colors = ThemeProvider.of(context)!.colors;
     final items = _getFilteredAndSortedItems();
     final allItems = activePeriod?.getAllEvaluations() ?? [];
-    final criticalCount = allItems.where((i) => i.detail.confidenceLevel <= 3).length;
+    final criticalCount =
+        allItems.where((i) => i.detail.confidenceLevel <= 3).length;
     final withDateCount = allItems.where((i) => i.detail.date != null).length;
 
     return Scaffold(
@@ -159,7 +169,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.psychology_outlined, color: colors.drawerButton, size: 22),
+                      Icon(Icons.psychology_outlined,
+                          color: colors.drawerButton, size: 22),
                       const SizedBox(width: 8),
                       Text(
                         'Período: ${activePeriod?.name ?? "Sin período"}',
@@ -212,19 +223,22 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                       style: ButtonStyle(
                         visualDensity: VisualDensity.compact,
                         shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
                       segments: const [
                         ButtonSegment(
                           value: StudyPlanSortOrder.confidence,
                           icon: Icon(Icons.priority_high, size: 16),
-                          label: Text('Por Confianza', style: TextStyle(fontSize: 11)),
+                          label: Text('Por Confianza',
+                              style: TextStyle(fontSize: 11)),
                         ),
                         ButtonSegment(
                           value: StudyPlanSortOrder.date,
                           icon: Icon(Icons.event, size: 16),
-                          label: Text('Por Fecha', style: TextStyle(fontSize: 11)),
+                          label:
+                              Text('Por Fecha', style: TextStyle(fontSize: 11)),
                         ),
                       ],
                       selected: {_sortOrder},
@@ -237,14 +251,16 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                   ),
                   const SizedBox(width: 8),
                   FilterChip(
-                    label: const Text('Solo Pendientes', style: TextStyle(fontSize: 11)),
+                    label: const Text('Solo Pendientes',
+                        style: TextStyle(fontSize: 11)),
                     selected: _onlyPending,
                     onSelected: (val) {
                       setState(() {
                         _onlyPending = val;
                       });
                     },
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ],
               ),
@@ -263,7 +279,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                             Icon(
                               Icons.menu_book_outlined,
                               size: 56,
-                              color: colors.primaryTextColor.withValues(alpha: 0.4),
+                              color: colors.primaryTextColor
+                                  .withValues(alpha: 0.4),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -279,7 +296,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                               'Mantén presionada (Long Press) cualquier nota en la pantalla principal para registrar fechas, contenidos y nivel de confianza.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: colors.primaryTextColor.withValues(alpha: 0.7),
+                                color: colors.primaryTextColor
+                                    .withValues(alpha: 0.7),
                                 fontSize: 13,
                               ),
                             ),
@@ -292,7 +310,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                       itemCount: items.length,
                       itemBuilder: (ctx, index) {
                         final item = items[index];
-                        final confColor = _getConfidenceColor(item.detail.confidenceLevel);
+                        final confColor =
+                            _getConfidenceColor(item.detail.confidenceLevel);
                         final hasContent = item.detail.content.isNotEmpty;
                         final hasNotes = item.detail.notes.isNotEmpty;
 
@@ -302,7 +321,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                             borderRadius: BorderRadius.circular(14),
                             side: BorderSide(
                               color: item.detail.confidenceLevel <= 3
-                                  ? const Color(0xFFEF4444).withValues(alpha: 0.4)
+                                  ? const Color(0xFFEF4444)
+                                      .withValues(alpha: 0.4)
                                   : colors.matterCardBorder,
                               width: item.detail.confidenceLevel <= 3 ? 1.4 : 1,
                             ),
@@ -319,11 +339,13 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                 children: [
                                   // Fila superior: Materia + Dimensión + Nota actual
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               item.matter.matterTitle.isNotEmpty
@@ -338,7 +360,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                             Text(
                                               '${item.dimension.dimensionTitle} • Evaluación #${item.noteIndex + 1}',
                                               style: TextStyle(
-                                                color: colors.matterCardText.withValues(alpha: 0.8),
+                                                color: colors.matterCardText
+                                                    .withValues(alpha: 0.8),
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -347,10 +370,12 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                       ),
                                       if (item.grade > 0)
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
                                             color: colors.noteGreen,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
                                           child: Text(
                                             'Nota ${item.grade.toStringAsFixed(1)}',
@@ -363,11 +388,16 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                         )
                                       else
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: colors.noteGrey.withValues(alpha: 0.2),
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: colors.noteGrey.withValues(alpha: 0.4)),
+                                            color: colors.noteGrey
+                                                .withValues(alpha: 0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                                color: colors.noteGrey
+                                                    .withValues(alpha: 0.4)),
                                           ),
                                           child: Text(
                                             'Pendiente',
@@ -387,16 +417,22 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                     children: [
                                       // Badge Fecha
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: item.detail.date != null
-                                              ? colors.drawerButton.withValues(alpha: 0.15)
-                                              : colors.noteFieldBorder.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(8),
+                                              ? colors.drawerButton
+                                                  .withValues(alpha: 0.15)
+                                              : colors.noteFieldBorder
+                                                  .withValues(alpha: 0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           border: Border.all(
                                             color: item.detail.date != null
-                                                ? colors.drawerButton.withValues(alpha: 0.3)
-                                                : colors.noteFieldBorder.withValues(alpha: 0.3),
+                                                ? colors.drawerButton
+                                                    .withValues(alpha: 0.3)
+                                                : colors.noteFieldBorder
+                                                    .withValues(alpha: 0.3),
                                           ),
                                         ),
                                         child: Row(
@@ -407,7 +443,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                               size: 14,
                                               color: item.detail.date != null
                                                   ? colors.drawerButton
-                                                  : colors.matterCardText.withValues(alpha: 0.6),
+                                                  : colors.matterCardText
+                                                      .withValues(alpha: 0.6),
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
@@ -415,7 +452,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                               style: TextStyle(
                                                 color: item.detail.date != null
                                                     ? colors.matterCardTitle
-                                                    : colors.matterCardText.withValues(alpha: 0.6),
+                                                    : colors.matterCardText
+                                                        .withValues(alpha: 0.6),
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -427,16 +465,22 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
 
                                       // Badge Confianza
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: confColor.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: confColor.withValues(alpha: 0.4)),
+                                          color:
+                                              confColor.withValues(alpha: 0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                              color: confColor.withValues(
+                                                  alpha: 0.4)),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.psychology, size: 14, color: confColor),
+                                            Icon(Icons.psychology,
+                                                size: 14, color: confColor),
                                             const SizedBox(width: 4),
                                             Text(
                                               item.detail.confidenceLabel,
@@ -469,11 +513,14 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(Icons.menu_book, size: 13, color: colors.drawerButton),
+                                              Icon(Icons.menu_book,
+                                                  size: 13,
+                                                  color: colors.drawerButton),
                                               const SizedBox(width: 4),
                                               Text(
                                                 'Temas a evaluar:',
@@ -511,11 +558,14 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(Icons.notes, size: 13, color: colors.matterCardText),
+                                              Icon(Icons.notes,
+                                                  size: 13,
+                                                  color: colors.matterCardText),
                                               const SizedBox(width: 4),
                                               Text(
                                                 'Apuntes de estudio:',
@@ -533,7 +583,8 @@ class _StudyPlanScreenState extends State<StudyPlanScreen> {
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
-                                              color: colors.matterCardText.withValues(alpha: 0.8),
+                                              color: colors.matterCardText
+                                                  .withValues(alpha: 0.8),
                                               fontSize: 12,
                                             ),
                                           ),

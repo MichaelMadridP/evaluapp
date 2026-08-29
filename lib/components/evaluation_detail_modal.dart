@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:evaluapp/data_model/model.dart';
 import 'package:evaluapp/themes.dart';
+import 'package:evaluapp/utils/evaluation_date_validator.dart';
 
 class EvaluationDetailModal extends StatefulWidget {
   const EvaluationDetailModal({
@@ -11,6 +12,10 @@ class EvaluationDetailModal extends StatefulWidget {
     required this.grade,
     required this.detail,
     required this.onSaveCB,
+    this.previousDate,
+    this.nextDate,
+    this.periodStartDate,
+    this.periodEndDate,
   });
 
   final String matterTitle;
@@ -19,6 +24,10 @@ class EvaluationDetailModal extends StatefulWidget {
   final double grade;
   final EvaluationDetail detail;
   final VoidCallback onSaveCB;
+  final DateTime? previousDate;
+  final DateTime? nextDate;
+  final DateTime? periodStartDate;
+  final DateTime? periodEndDate;
 
   @override
   State<EvaluationDetailModal> createState() => _EvaluationDetailModalState();
@@ -48,24 +57,93 @@ class _EvaluationDetailModalState extends State<EvaluationDetailModal> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
     ];
     return '${date.day} de ${months[date.month - 1]}, ${date.year}';
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final initialDate = _selectedDate ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
+  Future<void> _selectDate() async {
+    DateTime initialDate = _selectedDate ?? DateTime.now();
+
+    while (mounted) {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2100),
+      );
+      if (picked == null || !mounted) return;
+
+      final warnings = validateEvaluationDate(
+        date: picked,
+        now: DateTime.now(),
+        previousDate: widget.previousDate,
+        nextDate: widget.nextDate,
+        periodStartDate: widget.periodStartDate,
+        periodEndDate: widget.periodEndDate,
+      );
+
+      if (warnings.isEmpty) {
+        setState(() => _selectedDate = picked);
+        return;
+      }
+
+      final shouldContinue = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Revisar fecha'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final warning in warnings) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(Icons.warning_amber_rounded, size: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(warning.message)),
+                  ],
+                ),
+                if (warning != warnings.last) const SizedBox(height: 12),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Volver a editar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Continuar'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+
+      if (shouldContinue == true) {
+        setState(() => _selectedDate = picked);
+        return;
+      }
+
+      initialDate = picked;
     }
   }
 
@@ -137,306 +215,340 @@ class _EvaluationDetailModalState extends State<EvaluationDetailModal> {
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
     return SafeArea(
-      top: false,
-      child: Container(
-        color: colors.editMatterBackground,
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 16,
-          bottom: keyboardInset + bottomSafeArea + 24,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.noteFieldBorder,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Encabezado contextual
-            Row(
+        top: false,
+        child: Container(
+          color: colors.editMatterBackground,
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: keyboardInset + bottomSafeArea + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colors.drawerButton.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: colors.drawerButton.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    'Evaluación #${widget.noteIndex + 1}',
-                    style: TextStyle(
-                      color: colors.drawerButton,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (widget.grade > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: colors.noteGreen,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Nota: ${widget.grade.toStringAsFixed(1)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
+                      color: colors.noteFieldBorder,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(Icons.close, color: colors.editDimensionText),
-                  onPressed: () => Navigator.pop(context),
                 ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              widget.matterTitle.isNotEmpty ? widget.matterTitle : 'Materia',
-              style: TextStyle(
-                color: colors.editDimensionText,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (widget.dimensionTitle.isNotEmpty)
-              Text(
-                widget.dimensionTitle,
-                style: TextStyle(
-                  color: colors.editDimensionText.withValues(alpha: 0.7),
-                  fontSize: 14,
-                ),
-              ),
-            const SizedBox(height: 18),
+                const SizedBox(height: 14),
 
-            // 1. Selector de Fecha
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: BorderSide(color: colors.noteFieldBorder),
-              ),
-              leading: Icon(Icons.event_outlined, color: colors.drawerButton),
-              title: Text(
-                'Fecha de la Evaluación',
-                style: TextStyle(
-                  color: colors.editDimensionText.withValues(alpha: 0.7),
-                  fontSize: 12,
-                ),
-              ),
-              subtitle: Text(
-                _selectedDate != null ? _formatDate(_selectedDate!) : 'Toca para asignar fecha',
-                style: TextStyle(
-                  color: colors.editDimensionText,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              trailing: _selectedDate != null
-                  ? IconButton(
-                      icon: Icon(Icons.clear, color: colors.iconDeleteColor),
-                      tooltip: 'Borrar fecha',
-                      onPressed: () {
-                        setState(() {
-                          _selectedDate = null;
-                        });
-                      },
-                    )
-                  : Icon(Icons.edit_calendar, color: colors.drawerButton),
-              onTap: () => _selectDate(context),
-            ),
-            const SizedBox(height: 16),
-
-            // 2. Nivel de Confianza (1 a 7)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.editDimensionBackground,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.matterCardBorder.withValues(alpha: 0.5)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Nivel de Confianza / Preparación',
+                // Encabezado contextual
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colors.drawerButton.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: colors.drawerButton.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        'Evaluación #${widget.noteIndex + 1}',
                         style: TextStyle(
-                          color: colors.editDimensionText,
-                          fontSize: 13,
+                          color: colors.drawerButton,
                           fontWeight: FontWeight.bold,
+                          fontSize: 13,
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (widget.grade > 0)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: confidenceColor.withValues(alpha: 0.2),
+                          color: colors.noteGreen,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: confidenceColor, width: 1.2),
                         ),
                         child: Text(
-                          '$_confidenceLevel / 7',
-                          style: TextStyle(
-                            color: confidenceColor,
+                          'Nota: ${widget.grade.toStringAsFixed(1)}',
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
                         ),
                       ),
-                    ],
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.close, color: colors.editDimensionText),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.matterTitle.isNotEmpty
+                      ? widget.matterTitle
+                      : 'Materia',
+                  style: TextStyle(
+                    color: colors.editDimensionText,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 6),
+                ),
+                if (widget.dimensionTitle.isNotEmpty)
                   Text(
-                    _getConfidenceText(_confidenceLevel),
+                    widget.dimensionTitle,
                     style: TextStyle(
-                      color: confidenceColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      color: colors.editDimensionText.withValues(alpha: 0.7),
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  // Selector de 1 a 7 en botones táctiles
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(7, (index) {
-                      final val = index + 1;
-                      final isSelected = val == _confidenceLevel;
-                      final col = _getConfidenceColor(val, colors);
+                const SizedBox(height: 18),
 
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            _confidenceLevel = val;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isSelected ? col : colors.noteFieldBackground,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isSelected ? col : colors.noteFieldBorder,
-                              width: isSelected ? 2 : 1,
-                            ),
-                          ),
-                          child: Text(
-                            '$val',
+                // 1. Selector de Fecha
+                ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: colors.noteFieldBorder),
+                  ),
+                  leading:
+                      Icon(Icons.event_outlined, color: colors.drawerButton),
+                  title: Text(
+                    'Fecha de la Evaluación',
+                    style: TextStyle(
+                      color: colors.editDimensionText.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _selectedDate != null
+                        ? _formatDate(_selectedDate!)
+                        : 'Toca para asignar fecha',
+                    style: TextStyle(
+                      color: colors.editDimensionText,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  trailing: _selectedDate != null
+                      ? IconButton(
+                          icon:
+                              Icon(Icons.clear, color: colors.iconDeleteColor),
+                          tooltip: 'Borrar fecha',
+                          onPressed: () {
+                            setState(() {
+                              _selectedDate = null;
+                            });
+                          },
+                        )
+                      : Icon(Icons.edit_calendar, color: colors.drawerButton),
+                  onTap: _selectDate,
+                ),
+                const SizedBox(height: 16),
+
+                // 2. Nivel de Confianza (1 a 7)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.editDimensionBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: colors.matterCardBorder.withValues(alpha: 0.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Nivel de Confianza / Preparación',
                             style: TextStyle(
-                              color: isSelected ? Colors.white : colors.editDimensionText,
+                              color: colors.editDimensionText,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              fontSize: 15,
                             ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: confidenceColor.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: confidenceColor, width: 1.2),
+                            ),
+                            child: Text(
+                              '$_confidenceLevel / 7',
+                              style: TextStyle(
+                                color: confidenceColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _getConfidenceText(_confidenceLevel),
+                        style: TextStyle(
+                          color: confidenceColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    }),
+                      ),
+                      const SizedBox(height: 8),
+                      // Selector de 1 a 7 en botones táctiles
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(7, (index) {
+                          final val = index + 1;
+                          final isSelected = val == _confidenceLevel;
+                          final col = _getConfidenceColor(val, colors);
+
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                _confidenceLevel = val;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? col
+                                    : colors.noteFieldBackground,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color:
+                                      isSelected ? col : colors.noteFieldBorder,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                              ),
+                              child: Text(
+                                '$val',
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : colors.editDimensionText,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 16),
 
-            // 3. Contenidos de la Evaluación
-            TextField(
-              controller: _contentController,
-              maxLines: 3,
-              minLines: 2,
-              textCapitalization: TextCapitalization.sentences,
-              style: TextStyle(color: colors.editDimensionText),
-              decoration: InputDecoration(
-                labelText: 'Contenidos / Temas de la Evaluación',
-                hintText: 'Ej: Capítulos 1 al 4, Integrales dobles, Modelos de optimización...',
-                labelStyle: TextStyle(color: colors.editDimensionText),
-                hintStyle: TextStyle(color: colors.editDimensionText.withValues(alpha: 0.5), fontSize: 13),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.only(bottom: 24),
-                  child: Icon(Icons.menu_book_outlined),
-                ),
-                prefixIconColor: colors.drawerButton,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: colors.drawerButton, width: 2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // 4. Apuntes y Recordatorios
-            TextField(
-              controller: _notesController,
-              maxLines: 3,
-              minLines: 2,
-              textCapitalization: TextCapitalization.sentences,
-              style: TextStyle(color: colors.editDimensionText),
-              decoration: InputDecoration(
-                labelText: 'Apuntes / Notas de Estudio',
-                hintText: 'Ej: Llevar calculadora, repasar ejercicios de la guía 3, recordar teorema de Taylor...',
-                labelStyle: TextStyle(color: colors.editDimensionText),
-                hintStyle: TextStyle(color: colors.editDimensionText.withValues(alpha: 0.5), fontSize: 13),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.only(bottom: 24),
-                  child: Icon(Icons.edit_note_outlined),
-                ),
-                prefixIconColor: colors.drawerButton,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: colors.drawerButton, width: 2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Botones de acción
-            Row(
-              children: [
-                TextButton.icon(
-                  icon: Icon(Icons.restart_alt, color: colors.editDimensionText.withValues(alpha: 0.7)),
-                  label: Text('Limpiar', style: TextStyle(color: colors.editDimensionText.withValues(alpha: 0.7))),
-                  onPressed: _onClear,
-                ),
-                const Spacer(),
-                FilledButton.tonal(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.authButtonBackground,
-                    foregroundColor: colors.authButtonText,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                // 3. Contenidos de la Evaluación
+                TextField(
+                  controller: _contentController,
+                  maxLines: 3,
+                  minLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: TextStyle(color: colors.editDimensionText),
+                  decoration: InputDecoration(
+                    labelText: 'Contenidos / Temas de la Evaluación',
+                    hintText:
+                        'Ej: Capítulos 1 al 4, Integrales dobles, Modelos de optimización...',
+                    labelStyle: TextStyle(color: colors.editDimensionText),
+                    hintStyle: TextStyle(
+                        color: colors.editDimensionText.withValues(alpha: 0.5),
+                        fontSize: 13),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(bottom: 24),
+                      child: Icon(Icons.menu_book_outlined),
+                    ),
+                    prefixIconColor: colors.drawerButton,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: colors.drawerButton, width: 2),
+                    ),
                   ),
-                  onPressed: _onSave,
-                  child: const Text('Guardar'),
+                ),
+                const SizedBox(height: 14),
+
+                // 4. Apuntes y Recordatorios
+                TextField(
+                  controller: _notesController,
+                  maxLines: 3,
+                  minLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: TextStyle(color: colors.editDimensionText),
+                  decoration: InputDecoration(
+                    labelText: 'Apuntes / Notas de Estudio',
+                    hintText:
+                        'Ej: Llevar calculadora, repasar ejercicios de la guía 3, recordar teorema de Taylor...',
+                    labelStyle: TextStyle(color: colors.editDimensionText),
+                    hintStyle: TextStyle(
+                        color: colors.editDimensionText.withValues(alpha: 0.5),
+                        fontSize: 13),
+                    prefixIcon: const Padding(
+                      padding: EdgeInsets.only(bottom: 24),
+                      child: Icon(Icons.edit_note_outlined),
+                    ),
+                    prefixIconColor: colors.drawerButton,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: colors.drawerButton, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Botones de acción
+                Row(
+                  children: [
+                    TextButton.icon(
+                      icon: Icon(Icons.restart_alt,
+                          color:
+                              colors.editDimensionText.withValues(alpha: 0.7)),
+                      label: Text('Limpiar',
+                          style: TextStyle(
+                              color: colors.editDimensionText
+                                  .withValues(alpha: 0.7))),
+                      onPressed: _onClear,
+                    ),
+                    const Spacer(),
+                    FilledButton.tonal(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.authButtonBackground,
+                        foregroundColor: colors.authButtonText,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
+                      ),
+                      onPressed: _onSave,
+                      child: const Text('Guardar'),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    ));
+          ),
+        ));
   }
 }
